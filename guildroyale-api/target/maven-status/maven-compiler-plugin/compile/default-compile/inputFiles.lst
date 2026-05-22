@@ -1,0 +1,17 @@
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\domain\Guild.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\domain\GuildLevel.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\domain\GuildMember.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\domain\GuildRole.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\domain\SerializableItemStack.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\logging\GuildLogger.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\logging\LogEntry.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\logging\LogScope.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\permission\GuildPermissionKey.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\permission\PermissionEvaluator.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\service\ActionResult.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\service\GuildService.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\service\LeaderboardService.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\service\MemberService.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\service\RoleService.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\storage\GuildRepository.java
+C:\Users\Usain\IdeaProjects\GuildRoyale\guildroyale-api\src\main\java\dev\guildroyale\api\storage\StorageType.java

@@ -1,0 +1,98 @@
+# ─────────────────────────────────────────────────────────────────
+#  GuildRoyale — messages.yml
+#  All values are MiniMessage format strings.
+#  Named placeholders: <guild>, <player>, <role>, <level>, <xp>,
+#                      <reason>, <cost>, <page>, <total_pages>
+# ─────────────────────────────────────────────────────────────────
+
+prefix: "<dark_gray>[<gradient:gold:yellow>GuildRoyale</gradient>]</dark_gray> "
+
+# ── General ──────────────────────────────────────────────────────
+no-permission: "<red>You do not have permission to do that."
+player-only: "<red>This command can only be used by players."
+player-not-found: "<red>Player <yellow><player></yellow> was not found."
+not-in-guild: "<red>You are not in a guild."
+already-in-guild: "<red>You are already in a guild."
+invalid-guild: "<red>That guild does not exist."
+unknown-error: "<red>An unexpected error occurred. Please try again."
+
+# ── Guild creation ────────────────────────────────────────────────
+guild-created: "<green>Guild <gold><guild></gold> has been created!"
+guild-name-taken: "<red>A guild with that name already exists."
+guild-name-invalid: "<red>Guild name must be 3–32 characters and contain only letters, numbers, spaces, or hyphens."
+guild-shortname-invalid: "<red>Shortname must be 2–6 characters and contain only letters or numbers."
+guild-shortname-taken: "<red>That shortname is already in use."
+guild-creation-cost: "<yellow>Creating a guild costs <gold><cost></gold>. Opening creation dialog..."
+guild-creation-insufficient-funds: "<red>You need <gold><cost></gold> to create a guild."
+
+# ── Guild disband ─────────────────────────────────────────────────
+guild-disbanded: "<yellow>Your guild <gold><guild></gold> has been disbanded."
+guild-disbanded-broadcast: "<yellow>The guild <gold><guild></gold> has been disbanded."
+guild-disband-not-leader: "<red>Only the guild leader can disband the guild."
+
+# ── Membership ────────────────────────────────────────────────────
+member-joined: "<green><player> has joined the guild!"
+member-joined-self: "<green>You have joined <gold><guild></gold>!"
+member-left: "<yellow><player> has left the guild."
+member-left-self: "<yellow>You have left <gold><guild></gold>."
+member-kicked: "<red><player> has been kicked from the guild."
+member-kicked-self: "<red>You have been kicked from <gold><guild></gold>."
+member-not-found: "<red>That player is not a member of your guild."
+cannot-kick-self: "<red>You cannot kick yourself. Use /guild leave instead."
+cannot-kick-leader: "<red>You cannot kick the guild leader."
+target-outranks-you: "<red>You cannot perform this action on someone who outranks you."
+
+# ── Invitations ───────────────────────────────────────────────────
+invite-sent: "<green>Invitation sent to <yellow><player></yellow>."
+invite-received: "<gold><player></gold> <yellow>has invited you to join <gold><guild></gold>! Use <white>/guild join <guild></white> to accept."
+invite-already-sent: "<red>That player already has a pending invite to your guild."
+invite-expired: "<red>Your invitation has expired."
+no-invite: "<red>You do not have a pending invitation from that guild."
+invite-revoked: "<yellow>Invitation to <player> has been revoked."
+
+# ── Roles ─────────────────────────────────────────────────────────
+role-created: "<green>Role <gold><role></gold> has been created."
+role-deleted: "<yellow>Role <gold><role></gold> has been deleted. Members reassigned."
+role-renamed: "<green>Role renamed to <gold><role></gold>."
+role-name-invalid: "<red>Role name must be 2–20 characters."
+role-not-found: "<red>No role with that index exists."
+role-changed: "<green><player>'s role has been changed to <gold><role></gold>."
+role-changed-self: "<yellow>Your role has been changed to <gold><role></gold>."
+role-index-invalid: "<red>Role index must be between 1 and the number of roles."
+role-max-reached: "<red>Maximum number of roles reached."
+role-leader-protected: "<red>The leader role cannot be modified this way."
+permission-toggled: "<green>Permission toggled for role <gold><role></gold>."
+
+# ── Icon ──────────────────────────────────────────────────────────
+icon-updated: "<green>Guild icon updated!"
+icon-invalid: "<red>Please hold a valid item to set as the guild icon."
+
+# ── Shortname ─────────────────────────────────────────────────────
+shortname-changed: "<green>Guild shortname changed to <gold>[<guild>]</gold>."
+shortname-change-cost-msg: "<yellow>Changing your shortname costs <gold><cost></gold>."
+shortname-insufficient-funds: "<red>You need <gold><cost></gold> to change your shortname."
+
+# ── Leader transfer ───────────────────────────────────────────────
+leader-transferred: "<green>Leadership of <gold><guild></gold> has been transferred to <yellow><player></yellow>."
+leader-transferred-self: "<yellow>You are now the leader of <gold><guild></gold>."
+must-be-leader: "<red>Only the guild leader can do this."
+
+# ── Info ──────────────────────────────────────────────────────────
+guild-info-header: "<gold>━━━━━ <guild> [<guild>] ━━━━━"
+guild-info-level: "<gray>Level: <gold><level>"
+guild-info-xp: "<gray>XP: <gold><xp>"
+guild-info-members: "<gray>Members: <gold><total_pages>"
+guild-info-created: "<gray>Founded: <gold><guild>"
+guild-info-leader: "<gray>Leader: <gold><player>"
+
+# ── Leaderboard ───────────────────────────────────────────────────
+leaderboard-header: "<gold>━━━━━ Guild Leaderboard (Page <page>/<total_pages>) ━━━━━"
+leaderboard-entry: "<gray>#<level> <gold><guild></gold> [<guild>] <gray>— Lv.<gold><level></gold> <gray>(<xp> XP)"
+leaderboard-empty: "<yellow>No guilds found."
+leaderboard-invalid-page: "<red>Invalid page number."
+
+# ── Admin ─────────────────────────────────────────────────────────
+admin-reload: "<green>GuildRoyale configuration reloaded."
+admin-addxp: "<green>Added <gold><xp></gold> XP to guild <gold><guild></gold>."
+admin-setlevel: "<green>Set <gold><guild></gold>'s level to <gold><level></gold>."
+admin-delete: "<green>Guild <gold><guild></gold> has been forcefully deleted."
