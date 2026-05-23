@@ -1,7 +1,7 @@
 name: GuildRoyale
 version: '1.0.0-SNAPSHOT'
-main: dev.guildroyale.core.GuildRoyalePlugin
-bootstrapper: dev.guildroyale.core.bootstrap.GuildRoyaleBootstrap
+main: me.usainsrht.guildroyale.core.GuildRoyalePlugin
+bootstrapper: bootstrap.me.usainsrht.guildroyale.core.GuildRoyaleBootstrap
 api-version: '26'
 description: A modern Minecraft guilds plugin with Folia support
 authors:
