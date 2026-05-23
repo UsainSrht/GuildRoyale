@@ -96,3 +96,8 @@ admin-reload: "<green>GuildRoyale configuration reloaded."
 admin-addxp: "<green>Added <gold><xp></gold> XP to guild <gold><guild></gold>."
 admin-setlevel: "<green>Set <gold><guild></gold>'s level to <gold><level></gold>."
 admin-delete: "<green>Guild <gold><guild></gold> has been forcefully deleted."
+
+# ── Help / usage ──────────────────────────────────────────────────
+guild-help-header: "<gold><bold>GuildRoyale</bold></gold> <dark_gray>—</dark_gray> <yellow>/<cmd> help</yellow>"
+guildadmin-help-header: "<gold><bold>GuildRoyale Admin</bold></gold> <dark_gray>—</dark_gray> <yellow>/<cmd> help</yellow>"
+

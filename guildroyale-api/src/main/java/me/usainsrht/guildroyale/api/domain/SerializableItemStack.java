@@ -10,7 +10,7 @@ import java.util.Objects;
  * {@code ItemStack.serializeAsBytes()} — this preserves enchantments, custom model
  * data, display names, lore, and all other NBT. Conversion to/from a live
  * {@code org.bukkit.inventory.ItemStack} is handled by
- * {@code dev.guildroyale.core.adapter.ItemStackAdapter} in the core module.
+ * {@code me.usainsrht.guildroyale.core.adapter.ItemStackAdapter} in the core module.
  *
  * <p>The {@code material} field is a human-readable fallback string (e.g.
  * {@code "DIAMOND_SWORD"}) used only when {@code rawData} is unavailable.

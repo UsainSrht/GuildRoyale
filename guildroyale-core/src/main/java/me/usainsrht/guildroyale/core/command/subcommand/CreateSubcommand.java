@@ -17,8 +17,9 @@ public final class CreateSubcommand {
 
     private CreateSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("create")
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_CREATE))
                 .executes(CreateSubcommand::execute);
     }
 

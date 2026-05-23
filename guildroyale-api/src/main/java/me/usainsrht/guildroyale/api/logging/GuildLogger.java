@@ -6,7 +6,7 @@ import java.util.UUID;
  * Writes structured log entries for guild plugin events.
  *
  * <p>Entries are written to rotating files — there is no in-game visibility.
- * The implementation lives in {@code dev.guildroyale.core.logging.GuildLogWriter}.
+ * The implementation lives in {@code me.usainsrht.guildroyale.core.logging.GuildLogWriter}.
  */
 public interface GuildLogger {
 

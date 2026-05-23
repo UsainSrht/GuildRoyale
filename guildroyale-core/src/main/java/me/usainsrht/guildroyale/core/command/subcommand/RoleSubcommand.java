@@ -26,22 +26,67 @@ public final class RoleSubcommand {
 
     private RoleSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("role")
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name, String mainCmd) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_ROLE))
+                // Show sub-command list when /guild role is run alone
+                .executes(ctx -> {
+                    ctx.getSource().getSender().sendMessage(
+                            net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                                    "<red>Usage: <yellow>/" + mainCmd + " " + name
+                                    + " <create|delete|rename|setpermission>"));
+                    return 0;
+                })
                 .then(Commands.literal("create")
+                        .executes(ctx -> {
+                            ctx.getSource().getSender().sendMessage(
+                                    net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                                            "<red>Usage: <yellow>/" + mainCmd + " " + name + " create <roleName>"));
+                            return 0;
+                        })
                         .then(Commands.argument("name", StringArgumentType.greedyString())
                                 .executes(ctx -> executeCreate(ctx, StringArgumentType.getString(ctx, "name")))))
                 .then(Commands.literal("delete")
+                        .executes(ctx -> {
+                            ctx.getSource().getSender().sendMessage(
+                                    net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                                            "<red>Usage: <yellow>/" + mainCmd + " " + name + " delete <index>"));
+                            return 0;
+                        })
                         .then(Commands.argument("index", IntegerArgumentType.integer(1))
                                 .executes(ctx -> executeDelete(ctx, IntegerArgumentType.getInteger(ctx, "index")))))
                 .then(Commands.literal("rename")
+                        .executes(ctx -> {
+                            ctx.getSource().getSender().sendMessage(
+                                    net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                                            "<red>Usage: <yellow>/" + mainCmd + " " + name + " rename <index> <newName>"));
+                            return 0;
+                        })
                         .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                                .executes(ctx -> {
+                                    ctx.getSource().getSender().sendMessage(
+                                            net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                                                    "<red>Usage: <yellow>/" + mainCmd + " " + name + " rename <index> <newName>"));
+                                    return 0;
+                                })
                                 .then(Commands.argument("name", StringArgumentType.greedyString())
                                         .executes(ctx -> executeRename(ctx,
                                                 IntegerArgumentType.getInteger(ctx, "index"),
                                                 StringArgumentType.getString(ctx, "name"))))))
                 .then(Commands.literal("setpermission")
+                        .executes(ctx -> {
+                            ctx.getSource().getSender().sendMessage(
+                                    net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                                            "<red>Usage: <yellow>/" + mainCmd + " " + name + " setpermission <index> <permission>"));
+                            return 0;
+                        })
                         .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                                .executes(ctx -> {
+                                    ctx.getSource().getSender().sendMessage(
+                                            net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                                                    "<red>Usage: <yellow>/" + mainCmd + " " + name + " setpermission <index> <permission>"));
+                                    return 0;
+                                })
                                 .then(Commands.argument("permission", StringArgumentType.word())
                                         .executes(ctx -> executeTogglePerm(ctx,
                                                 IntegerArgumentType.getInteger(ctx, "index"),

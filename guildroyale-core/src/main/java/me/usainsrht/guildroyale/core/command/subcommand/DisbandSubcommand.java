@@ -14,8 +14,9 @@ public final class DisbandSubcommand {
 
     private DisbandSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("disband")
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_DISBAND))
                 .executes(DisbandSubcommand::execute);
     }
 

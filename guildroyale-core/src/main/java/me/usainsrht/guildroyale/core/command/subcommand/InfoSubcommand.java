@@ -14,8 +14,10 @@ public final class InfoSubcommand {
 
     private InfoSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("info").executes(InfoSubcommand::execute);
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_INFO))
+                .executes(InfoSubcommand::execute);
     }
 
     private static int execute(CommandContext<CommandSourceStack> ctx) {

@@ -16,8 +16,15 @@ public final class JoinSubcommand {
 
     private JoinSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("join")
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name, String mainCmd) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_JOIN))
+                .executes(ctx -> {
+                    ctx.getSource().getSender().sendMessage(
+                            net.kyori.adventure.text.minimessage.MiniMessage.miniMessage()
+                                    .deserialize("<red>Usage: <yellow>/" + mainCmd + " " + name + " <guildName>"));
+                    return 0;
+                })
                 .then(Commands.argument("guild", StringArgumentType.greedyString())
                         .executes(JoinSubcommand::execute));
     }

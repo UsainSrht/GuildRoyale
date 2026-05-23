@@ -1,7 +1,7 @@
 package me.usainsrht.guildroyale.core.listener;
 
 import me.usainsrht.guildroyale.api.logging.GuildLogger;
-import dev.guildroyale.core.event.*;
+import me.usainsrht.guildroyale.core.event.*;
 import me.usainsrht.guildroyale.core.event.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;

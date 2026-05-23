@@ -6,7 +6,7 @@ import me.usainsrht.guildroyale.api.service.GuildService;
 import me.usainsrht.guildroyale.api.storage.GuildRepository;
 import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.core.config.ConfigManager;
-import dev.guildroyale.core.event.*;
+import me.usainsrht.guildroyale.core.event.*;
 import me.usainsrht.guildroyale.core.event.GuildCreatedEvent;
 import me.usainsrht.guildroyale.core.event.GuildDisbandedEvent;
 import me.usainsrht.guildroyale.core.event.GuildLevelUpEvent;

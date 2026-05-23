@@ -14,8 +14,10 @@ public final class MenuSubcommand {
 
     private MenuSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("menu").executes(MenuSubcommand::execute);
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_MENU))
+                .executes(MenuSubcommand::execute);
     }
 
     private static int execute(CommandContext<CommandSourceStack> ctx) {

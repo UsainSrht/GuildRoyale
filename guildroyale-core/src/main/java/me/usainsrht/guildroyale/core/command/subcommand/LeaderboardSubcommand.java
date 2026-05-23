@@ -14,8 +14,10 @@ public final class LeaderboardSubcommand {
 
     private LeaderboardSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("leaderboard").executes(LeaderboardSubcommand::execute);
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_LEADERBOARD))
+                .executes(LeaderboardSubcommand::execute);
     }
 
     private static int execute(CommandContext<CommandSourceStack> ctx) {

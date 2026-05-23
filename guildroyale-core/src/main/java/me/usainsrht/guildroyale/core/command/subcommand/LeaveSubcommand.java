@@ -14,8 +14,10 @@ public final class LeaveSubcommand {
 
     private LeaveSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("leave").executes(LeaveSubcommand::execute);
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_LEAVE))
+                .executes(LeaveSubcommand::execute);
     }
 
     private static int execute(CommandContext<CommandSourceStack> ctx) {

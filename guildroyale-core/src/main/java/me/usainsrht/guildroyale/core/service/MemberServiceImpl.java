@@ -8,7 +8,7 @@ import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.api.service.MemberService;
 import me.usainsrht.guildroyale.api.storage.GuildRepository;
 import me.usainsrht.guildroyale.core.config.ConfigManager;
-import dev.guildroyale.core.event.*;
+import me.usainsrht.guildroyale.core.event.*;
 import me.usainsrht.guildroyale.core.event.GuildMemberJoinEvent;
 import me.usainsrht.guildroyale.core.event.GuildMemberKickedEvent;
 import me.usainsrht.guildroyale.core.event.GuildMemberLeaveEvent;

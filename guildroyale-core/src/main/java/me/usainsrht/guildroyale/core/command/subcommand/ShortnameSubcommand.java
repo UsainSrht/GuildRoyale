@@ -15,8 +15,10 @@ public final class ShortnameSubcommand {
 
     private ShortnameSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("shortname").executes(ShortnameSubcommand::execute);
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_SHORTNAME))
+                .executes(ShortnameSubcommand::execute);
     }
 
     private static int execute(CommandContext<CommandSourceStack> ctx) {

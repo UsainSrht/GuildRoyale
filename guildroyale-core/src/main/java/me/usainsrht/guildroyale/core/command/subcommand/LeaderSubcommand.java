@@ -17,8 +17,15 @@ public final class LeaderSubcommand {
 
     private LeaderSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("leader")
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name, String mainCmd) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_LEADER))
+                .executes(ctx -> {
+                    ctx.getSource().getSender().sendMessage(
+                            net.kyori.adventure.text.minimessage.MiniMessage.miniMessage()
+                                    .deserialize("<red>Usage: <yellow>/" + mainCmd + " " + name + " <player>"));
+                    return 0;
+                })
                 .then(Commands.argument("player", StringArgumentType.word())
                         .executes(LeaderSubcommand::execute));
     }

@@ -17,8 +17,15 @@ public final class KickSubcommand {
 
     private KickSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("kick")
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name, String mainCmd) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_KICK))
+                .executes(ctx -> {
+                    ctx.getSource().getSender().sendMessage(
+                            net.kyori.adventure.text.minimessage.MiniMessage.miniMessage()
+                                    .deserialize("<red>Usage: <yellow>/" + mainCmd + " " + name + " <player>"));
+                    return 0;
+                })
                 .then(Commands.argument("player", StringArgumentType.word())
                         .executes(KickSubcommand::execute));
     }

@@ -49,6 +49,46 @@ invite:
   # Seconds until a pending invite expires
   expire-seconds: 120
 
+# ── Commands ─────────────────────────────────────────────────────
+# IMPORTANT: command names and aliases are registered with Brigadier
+# at server start-up. Any changes here require a full server restart.
+#
+# Permission nodes are hardcoded and do NOT change when you rename
+# a command. Assign them in your permissions plugin as usual.
+commands:
+  guild:
+    # The primary command name (default: /guild)
+    name: guild
+    # Additional aliases (Brigadier registers these on startup)
+    aliases:
+      - g
+    # Individual subcommand labels — rename freely without breaking permissions
+    subcommands:
+      create:      create
+      disband:     disband
+      info:        info
+      invite:      invite
+      join:        join
+      leave:       leave
+      kick:        kick
+      role:        role
+      icon:        icon
+      shortname:   shortname
+      leaderboard: leaderboard
+      leader:      leader
+      menu:        menu
+
+  admin:
+    # The primary admin command name (default: /guildadmin)
+    name: guildadmin
+    aliases:
+      - ga
+    subcommands:
+      reload:   reload
+      addxp:    addxp
+      setlevel: setlevel
+      delete:   delete
+
 # ── Default roles ────────────────────────────────────────────────
 # Index 0 is always Leader (full permissions, cannot be deleted or customised here)
 default-roles:

@@ -15,8 +15,10 @@ public final class IconSubcommand {
 
     private IconSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node() {
-        return Commands.literal("icon").executes(IconSubcommand::execute);
+    public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
+        return Commands.literal(name)
+                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_ICON))
+                .executes(IconSubcommand::execute);
     }
 
     private static int execute(CommandContext<CommandSourceStack> ctx) {
