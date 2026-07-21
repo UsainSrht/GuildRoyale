@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
 
     <name>GuildRoyale Parent</name>
-    <description>A modern Minecraft guilds plugin for Paper 26.1 with Folia support</description>
+    <description>A modern Minecraft guilds plugin for Paper 26.2 with Folia support</description>
 
     <modules>
         <module>guildroyale-api</module>
@@ -18,9 +18,9 @@
     </modules>
 
     <properties>
-        <maven.compiler.release>21</maven.compiler.release>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <paper.version>26.1.2.build.65-stable</paper.version>
+        <paper.version>26.2.build.63-beta</paper.version>
     </properties>
 
     <build>

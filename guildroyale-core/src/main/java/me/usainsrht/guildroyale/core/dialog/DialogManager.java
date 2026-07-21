@@ -1,6 +1,7 @@
 package me.usainsrht.guildroyale.core.dialog;
 
 import io.papermc.paper.dialog.Dialog;
+import io.papermc.paper.dialog.DialogResponseView;
 import io.papermc.paper.registry.data.dialog.ActionButton;
 import io.papermc.paper.registry.data.dialog.DialogBase;
 import io.papermc.paper.registry.data.dialog.action.DialogAction;
@@ -8,14 +9,12 @@ import io.papermc.paper.registry.data.dialog.action.DialogActionCallback;
 import io.papermc.paper.registry.data.dialog.body.DialogBody;
 import io.papermc.paper.registry.data.dialog.input.DialogInput;
 import io.papermc.paper.registry.data.dialog.type.DialogType;
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickCallback;
 import org.bukkit.entity.Player;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -25,7 +24,7 @@ import java.util.function.Consumer;
  * fires server-side when the player submits the form — no
  * {@code PlayerDialogResponseEvent} needed.
  *
- * <p>Dialogs are opened directly via {@code player.openDialog(dialog)}.
+ * <p>Dialogs are opened directly via {@link Player#showDialog(io.papermc.paper.dialog.Dialog)}.
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class DialogManager {
@@ -34,6 +33,12 @@ public final class DialogManager {
             .uses(1)
             .lifetime(Duration.ofMinutes(5))
             .build();
+
+    /** Reads a text input; returns empty string when the key is missing or null. */
+    private static String textOrEmpty(DialogResponseView response, String key) {
+        String value = response.getText(key);
+        return value == null ? "" : value.trim();
+    }
 
     // ── Guild creation ────────────────────────────────────────────────────────
 
@@ -60,8 +65,8 @@ public final class DialogManager {
 
         DialogAction action = DialogAction.customClick(
                 (DialogActionCallback) (response, audience) -> {
-                    String name = response.getText("guild_name").trim();
-                    String shortname = response.getText("guild_shortname").trim();
+                    String name = textOrEmpty(response, "guild_name");
+                    String shortname = textOrEmpty(response, "guild_shortname");
                     if (!name.isEmpty() && !shortname.isEmpty()) {
                         callback.accept(new String[]{name, shortname});
                     }
@@ -88,7 +93,7 @@ public final class DialogManager {
 
         DialogAction action = DialogAction.customClick(
                 (DialogActionCallback) (response, audience) -> {
-                    String value = response.getText("shortname").trim();
+                    String value = textOrEmpty(response, "shortname");
                     if (!value.isEmpty()) callback.accept(value);
                 },
                 SINGLE_USE
@@ -113,7 +118,7 @@ public final class DialogManager {
 
         DialogAction action = DialogAction.customClick(
                 (DialogActionCallback) (response, audience) -> {
-                    String value = response.getText("role_name").trim();
+                    String value = textOrEmpty(response, "role_name");
                     if (!value.isEmpty()) callback.accept(value);
                 },
                 SINGLE_USE
