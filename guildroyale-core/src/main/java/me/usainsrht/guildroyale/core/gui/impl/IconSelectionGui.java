@@ -2,14 +2,13 @@ package me.usainsrht.guildroyale.core.gui.impl;
 
 import me.usainsrht.guildroyale.api.domain.SerializableItemStack;
 import me.usainsrht.guildroyale.core.adapter.ItemStackAdapter;
+import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.gui.AbstractGui;
+import me.usainsrht.guildroyale.core.gui.GuiItems;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.function.Consumer;
 
@@ -17,40 +16,52 @@ import java.util.function.Consumer;
  * Opens the player's own inventory as a selection GUI.
  * When the player clicks an item, it is captured as the new icon and the
  * {@code callback} is invoked with the serialised form.
- *
- * <p>The inventory is NOT a new chest — it mirrors the player's contents.
- * We achieve this by showing the actual player inventory and treating item
- * clicks as selections.
  */
 public final class IconSelectionGui extends AbstractGui {
 
     private final Player targetPlayer;
     private final Consumer<SerializableItemStack> callback;
+    private final int contentSlots;
+    private final int instructionSlot;
+    private final int instructionRowStart;
+    private final int instructionRowEnd;
 
     public IconSelectionGui(Player targetPlayer, Consumer<SerializableItemStack> callback) {
-        super(54, "Select an icon — click any item");
+        super(size(), title());
         this.targetPlayer = targetPlayer;
         this.callback = callback;
+
+        GuiConfig gui = GuiItems.config();
+        this.contentSlots = gui != null ? gui.pageSize("icon-selection.content-slots", 36) : 36;
+        this.instructionSlot = gui != null ? gui.slot("icon-selection.instruction-slot", 49) : 49;
+        this.instructionRowStart = gui != null ? gui.slot("icon-selection.instruction-row-start", 45) : 45;
+        this.instructionRowEnd = gui != null ? gui.slot("icon-selection.instruction-row-end", 54) : 54;
+    }
+
+    private static int size() {
+        GuiConfig gui = GuiItems.config();
+        return gui != null ? gui.size("icon-selection.size", 54) : 54;
+    }
+
+    private static Component title() {
+        GuiConfig gui = GuiItems.config();
+        if (gui == null) {
+            return Component.text("Select an icon");
+        }
+        return gui.title("icon-selection.title");
     }
 
     @Override
     protected void build() {
-        // Mirror player inventory contents into the top 36 slots
         ItemStack[] contents = targetPlayer.getInventory().getContents();
-        for (int i = 0; i < Math.min(contents.length, 36); i++) {
+        for (int i = 0; i < Math.min(contents.length, contentSlots); i++) {
             if (contents[i] != null) setSlot(i, contents[i].clone());
         }
 
-        // Instruction row
-        for (int i = 45; i < 54; i++) {
-            ItemStack pane = new ItemStack(org.bukkit.Material.CYAN_STAINED_GLASS_PANE);
-            ItemMeta pm = pane.getItemMeta();
-            pm.displayName(i == 49
-                    ? Component.text("Click any item above to select it as the icon", NamedTextColor.AQUA)
-                            .decoration(TextDecoration.ITALIC, false)
-                    : Component.text(" ").decoration(TextDecoration.ITALIC, false));
-            pane.setItemMeta(pm);
-            setSlot(i, pane);
+        ItemStack pane = GuiItems.get("icon-selection-pane");
+        ItemStack instruction = GuiItems.get("icon-selection-instruction");
+        for (int i = instructionRowStart; i < instructionRowEnd; i++) {
+            setSlot(i, i == instructionSlot ? instruction : pane.clone());
         }
     }
 
@@ -58,7 +69,7 @@ public final class IconSelectionGui extends AbstractGui {
     public boolean onClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return true;
         ItemStack clicked = event.getCurrentItem();
-        if (clicked != null && !clicked.getType().isAir() && event.getRawSlot() < 36) {
+        if (clicked != null && !clicked.getType().isAir() && event.getRawSlot() < contentSlots) {
             SerializableItemStack icon = ItemStackAdapter.toSerializable(clicked);
             player.closeInventory();
             callback.accept(icon);

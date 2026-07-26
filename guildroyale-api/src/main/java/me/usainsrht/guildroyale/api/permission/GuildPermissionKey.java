@@ -35,7 +35,22 @@ public enum GuildPermissionKey {
     INVITE,
 
     /** Kick members from the guild. */
-    KICK;
+    KICK,
+
+    /** Buy and equip guild badges. */
+    BADGE_MANAGE,
+
+    /** Open and use the shared guild storage chest. */
+    STORAGE_ACCESS,
+
+    /** View the guild bank balance. */
+    BANK_VIEW,
+
+    /** Deposit money into the guild bank. */
+    BANK_DEPOSIT,
+
+    /** Withdraw money from the guild bank. */
+    BANK_WITHDRAW;
 
     /** Returns the lowercase string key used in config/storage. */
     public String key() { return name().toLowerCase(); }

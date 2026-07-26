@@ -1,9 +1,11 @@
 package me.usainsrht.guildroyale.core.config;
 
+import me.usainsrht.guildroyale.core.feature.GuildFeature;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * Provides typed access to {@code config.yml} values.
@@ -13,6 +15,7 @@ public final class ConfigManager {
 
     private final JavaPlugin plugin;
     private FileConfiguration cfg;
+    private Map<String, BadgeDefinition> badges = Map.of();
 
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -22,6 +25,7 @@ public final class ConfigManager {
     public void reload() {
         plugin.reloadConfig();
         cfg = plugin.getConfig();
+        badges = loadBadges();
     }
 
     // ── Storage ─────────────────────────────────────────────────
@@ -43,8 +47,40 @@ public final class ConfigManager {
 
     // ── Creation ────────────────────────────────────────────────
 
+    public boolean isCreationPermissionEnabled() {
+        return cfg.getBoolean("creation.permission.enabled", true);
+    }
+
+    public String getCreationPermissionNode() {
+        return cfg.getString("creation.permission.node", "guildroyale.create");
+    }
+
+    public boolean isCreationMoneyEnabled() {
+        return cfg.getBoolean("creation.money.enabled", true);
+    }
+
     public double getCreationMoneyCost() {
-        return cfg.getDouble("creation.money-cost", 0.0);
+        return cfg.getDouble("creation.money.cost", cfg.getDouble("creation.money-cost", 0.0));
+    }
+
+    public boolean isCreationItemsEnabled() {
+        return cfg.getBoolean("creation.items.enabled", false);
+    }
+
+    public List<ItemRequirement> getCreationItemRequirements() {
+        List<ItemRequirement> result = new ArrayList<>();
+        List<Map<?, ?>> list = cfg.getMapList("creation.items.requirements");
+        if (list.isEmpty()) {
+            list = cfg.getMapList("creation.item-requirements");
+        }
+        for (Map<?, ?> map : list) {
+            Object mat = map.get("material");
+            Object amt = map.get("amount");
+            if (mat == null) continue;
+            int amount = amt instanceof Number n ? n.intValue() : 1;
+            result.add(new ItemRequirement(mat.toString(), Math.max(1, amount)));
+        }
+        return result;
     }
 
     // ── Shortname ────────────────────────────────────────────────
@@ -57,7 +93,66 @@ public final class ConfigManager {
 
     public long getXpBase() { return cfg.getLong("xp.base", 1000L); }
     public double getXpMultiplier() { return cfg.getDouble("xp.multiplier", 1.5); }
+
+    /**
+     * Maximum guild level. {@code <= 0} means unlimited.
+     */
     public int getLevelCap() { return cfg.getInt("xp.level-cap", 10); }
+
+    public boolean hasLevelCap() { return getLevelCap() > 0; }
+
+    // ── Features ─────────────────────────────────────────────────
+
+    public int getFeatureUnlockLevel(GuildFeature feature) {
+        return cfg.getInt("features." + feature.configKey() + ".unlock-level", 1);
+    }
+
+    public int getStorageSlotsPerLevel() {
+        return Math.max(1, cfg.getInt("features.storage.slots-per-level", 9));
+    }
+
+    public int getStorageMaxSlots() {
+        return Math.min(54, Math.max(9, cfg.getInt("features.storage.max-slots", 54)));
+    }
+
+    /**
+     * Computes chest slot count for a guild level (multiple of 9, 9–54).
+     */
+    public int getStorageSlotsForLevel(int level) {
+        int raw = Math.min(getStorageMaxSlots(), Math.max(0, level) * getStorageSlotsPerLevel());
+        if (raw < 9) return 9;
+        int rounded = ((raw + 8) / 9) * 9;
+        return Math.min(54, rounded);
+    }
+
+    // ── Badges ───────────────────────────────────────────────────
+
+    public Map<String, BadgeDefinition> getBadges() {
+        return badges;
+    }
+
+    public Optional<BadgeDefinition> getBadge(String id) {
+        return Optional.ofNullable(badges.get(id));
+    }
+
+    public Optional<String> getBadgeDisplay(String id) {
+        return getBadge(id).map(BadgeDefinition::display);
+    }
+
+    private Map<String, BadgeDefinition> loadBadges() {
+        ConfigurationSection section = cfg.getConfigurationSection("badges");
+        if (section == null) return Map.of();
+        Map<String, BadgeDefinition> map = new LinkedHashMap<>();
+        for (String id : section.getKeys(false)) {
+            ConfigurationSection badge = section.getConfigurationSection(id);
+            if (badge == null) continue;
+            String display = badge.getString("display", id);
+            double cost = badge.getDouble("cost", 0.0);
+            boolean grantable = badge.getBoolean("grantable", true);
+            map.put(id, new BadgeDefinition(id, display, cost, grantable));
+        }
+        return Collections.unmodifiableMap(map);
+    }
 
     // ── Leaderboard ──────────────────────────────────────────────
 

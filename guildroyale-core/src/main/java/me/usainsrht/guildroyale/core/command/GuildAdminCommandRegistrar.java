@@ -33,8 +33,8 @@ public final class GuildAdminCommandRegistrar {
                     GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
 
                     if (plugin != null) {
-                        sender.sendMessage(plugin.getMessages().prefixed("guildadmin-help-header",
-                                Placeholder.unparsed("cmd", cmd)));
+                        plugin.getMessages().send(sender, "guildadmin-help-header",
+                                Placeholder.unparsed("cmd", cmd));
                     } else {
                         sender.sendMessage(mm.deserialize(
                                 "<gold><bold>GuildRoyale Admin</bold></gold> <dark_gray>—</dark_gray> <yellow>/"
@@ -51,6 +51,9 @@ public final class GuildAdminCommandRegistrar {
                     sender.sendMessage(mm.deserialize(
                             "  <gray>/" + cmd + " <yellow>" + cfg.adminSub("delete")
                                     + " <white><guild>"));
+                    sender.sendMessage(mm.deserialize(
+                            "  <gray>/" + cmd + " <yellow>" + cfg.adminSub("badge")
+                                    + " <white><grant|revoke> <guild> <id>"));
                     return 1;
                 })
                 .then(Commands.literal(cfg.adminSub("reload"))
@@ -59,8 +62,8 @@ public final class GuildAdminCommandRegistrar {
                             if (plugin == null) return 0;
                             plugin.getConfigManager().reload();
                             plugin.getMessages().reload();
-                            ctx.getSource().getSender().sendMessage(
-                                    plugin.getMessages().prefixed("admin-reload"));
+                            plugin.getGuiConfig().reload();
+                            plugin.getMessages().send(ctx.getSource().getSender(), "admin-reload");
                             return 1;
                         }))
                 .then(Commands.literal(cfg.adminSub("addxp"))
@@ -85,10 +88,9 @@ public final class GuildAdminCommandRegistrar {
                                                     plugin.getGuildService().getGuildByName(guildName).thenCompose(opt -> {
                                                         if (opt.isEmpty()) return java.util.concurrent.CompletableFuture.completedFuture(null);
                                                         return plugin.getGuildService().adminAddXp(opt.get().getId(), amount)
-                                                                .thenRun(() -> ctx.getSource().getSender().sendMessage(
-                                                                        plugin.getMessages().prefixed("admin-addxp",
+                                                                .thenRun(() -> plugin.getMessages().send(ctx.getSource().getSender(), "admin-addxp",
                                                                                 Placeholder.unparsed("guild", guildName),
-                                                                                Placeholder.unparsed("xp", String.valueOf(amount)))));
+                                                                                Placeholder.unparsed("xp", String.valueOf(amount))));
                                                     })
                                             );
                                             return 1;
@@ -105,24 +107,44 @@ public final class GuildAdminCommandRegistrar {
                                             "<red>Usage: <yellow>/" + cmd + " " + cfg.adminSub("setlevel") + " <guild> <level>"));
                                     return 0;
                                 })
-                                .then(Commands.argument("level", IntegerArgumentType.integer(1, 10))
+                                .then(Commands.argument("level", IntegerArgumentType.integer(1))
                                         .executes(ctx -> {
                                             GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
                                             if (plugin == null) return 0;
                                             String guildName = StringArgumentType.getString(ctx, "guild");
                                             int level = IntegerArgumentType.getInteger(ctx, "level");
+                                            int cap = plugin.getConfigManager().getLevelCap();
+                                            if (cap > 0 && level > cap) {
+                                                ctx.getSource().getSender().sendMessage(mm.deserialize(
+                                                        "<red>Level must be between 1 and " + cap + "."));
+                                                return 0;
+                                            }
                                             plugin.getScheduler().runAsync(() ->
                                                     plugin.getGuildService().getGuildByName(guildName).thenCompose(opt -> {
                                                         if (opt.isEmpty()) return java.util.concurrent.CompletableFuture.completedFuture(null);
                                                         return plugin.getGuildService().adminSetLevel(opt.get().getId(), level)
-                                                                .thenRun(() -> ctx.getSource().getSender().sendMessage(
-                                                                        plugin.getMessages().prefixed("admin-setlevel",
+                                                                .thenRun(() -> plugin.getMessages().send(ctx.getSource().getSender(), "admin-setlevel",
                                                                                 Placeholder.unparsed("guild", guildName),
-                                                                                Placeholder.unparsed("level", String.valueOf(level)))));
+                                                                                Placeholder.unparsed("level", String.valueOf(level))));
                                                     })
                                             );
                                             return 1;
                                         }))))
+                .then(Commands.literal(cfg.adminSub("badge"))
+                        .then(Commands.literal("grant")
+                                .then(Commands.argument("guild", StringArgumentType.word())
+                                        .then(Commands.argument("id", StringArgumentType.word())
+                                                .executes(ctx -> adminBadge(ctx, true)))))
+                        .then(Commands.literal("revoke")
+                                .then(Commands.argument("guild", StringArgumentType.word())
+                                        .then(Commands.argument("id", StringArgumentType.word())
+                                                .executes(ctx -> adminBadge(ctx, false)))))
+                        .executes(ctx -> {
+                            ctx.getSource().getSender().sendMessage(mm.deserialize(
+                                    "<red>Usage: <yellow>/" + cmd + " " + cfg.adminSub("badge")
+                                            + " <grant|revoke> <guild> <id>"));
+                            return 0;
+                        }))
                 .then(Commands.literal(cfg.adminSub("delete"))
                         .executes(ctx -> {
                             ctx.getSource().getSender().sendMessage(mm.deserialize(
@@ -138,9 +160,8 @@ public final class GuildAdminCommandRegistrar {
                                             plugin.getGuildService().getGuildByName(guildName).thenCompose(opt -> {
                                                 if (opt.isEmpty()) return java.util.concurrent.CompletableFuture.completedFuture(null);
                                                 return plugin.getRepository().delete(opt.get().getId())
-                                                        .thenRun(() -> ctx.getSource().getSender().sendMessage(
-                                                                plugin.getMessages().prefixed("admin-delete",
-                                                                        Placeholder.unparsed("guild", guildName))));
+                                                        .thenRun(() -> plugin.getMessages().send(ctx.getSource().getSender(), "admin-delete",
+                                                                        Placeholder.unparsed("guild", guildName)));
                                             })
                                     );
                                     return 1;
@@ -148,5 +169,35 @@ public final class GuildAdminCommandRegistrar {
                 .build();
 
         commands.register(root, "GuildRoyale admin commands", cfg.adminAliases());
+    }
+
+    private static int adminBadge(com.mojang.brigadier.context.CommandContext<
+            io.papermc.paper.command.brigadier.CommandSourceStack> ctx, boolean grant) {
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        if (plugin == null) return 0;
+        String guildName = StringArgumentType.getString(ctx, "guild");
+        String badgeId = StringArgumentType.getString(ctx, "id");
+        plugin.getScheduler().runAsync(() ->
+                plugin.getGuildService().getGuildByName(guildName).thenCompose(opt -> {
+                    if (opt.isEmpty()) {
+                        plugin.getMessages().send(ctx.getSource().getSender(), "invalid-guild");
+                        return java.util.concurrent.CompletableFuture.completedFuture(null);
+                    }
+                    var future = grant
+                            ? plugin.getGuildService().adminGrantBadge(opt.get().getId(), badgeId)
+                            : plugin.getGuildService().adminRevokeBadge(opt.get().getId(), badgeId);
+                    return future.thenAccept(result -> {
+                        if (result.isSuccess()) {
+                            plugin.getMessages().send(ctx.getSource().getSender(),
+                                    grant ? "admin-badge-grant" : "admin-badge-revoke",
+                                    Placeholder.unparsed("guild", guildName),
+                                    Placeholder.unparsed("badge", badgeId));
+                        } else {
+                            plugin.getMessages().send(ctx.getSource().getSender(), result.failureReasonOrEmpty());
+                        }
+                    });
+                })
+        );
+        return 1;
     }
 }

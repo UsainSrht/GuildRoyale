@@ -3,6 +3,7 @@ package me.usainsrht.guildroyale.core.integration;
 import me.usainsrht.guildroyale.api.domain.Guild;
 import me.usainsrht.guildroyale.api.service.GuildService;
 import me.usainsrht.guildroyale.api.service.LeaderboardService;
+import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
@@ -22,6 +23,7 @@ import java.util.Optional;
  *   <li>{@code %guildroyale_guild_xp%} — the guild XP</li>
  *   <li>{@code %guildroyale_guild_members%} — member count</li>
  *   <li>{@code %guildroyale_role%} — the player's role name within their guild</li>
+ *   <li>{@code %guildroyale_badge%} — the guild's active badge MiniMessage text, or empty</li>
  *   <li>{@code %guildroyale_top_name_<n>%} — name of the n-th guild on the leaderboard (1-based)</li>
  *   <li>{@code %guildroyale_top_level_<n>%} — level of the n-th guild on the leaderboard</li>
  * </ul>
@@ -31,17 +33,20 @@ import java.util.Optional;
  */
 public final class GuildRoyalePlaceholderExpansion extends PlaceholderExpansion {
 
+    private final GuildRoyalePlugin plugin;
     private final GuildService guildService;
     private final LeaderboardService leaderboardService;
 
-    public GuildRoyalePlaceholderExpansion(GuildService guildService, LeaderboardService leaderboardService) {
+    public GuildRoyalePlaceholderExpansion(GuildRoyalePlugin plugin, GuildService guildService,
+                                           LeaderboardService leaderboardService) {
+        this.plugin = plugin;
         this.guildService = guildService;
         this.leaderboardService = leaderboardService;
     }
 
     @Override public @NotNull String getIdentifier() { return "guildroyale"; }
     @Override public @NotNull String getAuthor() { return "GuildRoyale"; }
-    @Override public @NotNull String getVersion() { return "1.0.0"; }
+    @Override public @NotNull String getVersion() { return plugin.getPluginMeta().getVersion(); }
     @Override public boolean persist() { return true; }
     @Override public boolean canRegister() { return true; }
 
@@ -62,6 +67,11 @@ public final class GuildRoyalePlaceholderExpansion extends PlaceholderExpansion 
             case "guild_level"     -> String.valueOf(guild.getLevel());
             case "guild_xp"        -> String.valueOf(guild.getXp());
             case "guild_members"   -> String.valueOf(guild.getMembers().size());
+            case "badge" -> {
+                String id = guild.getActiveBadgeId();
+                if (id == null) yield "";
+                yield plugin.getConfigManager().getBadgeDisplay(id).orElse("");
+            }
             case "role" -> guild.getMember(player.getUniqueId())
                     .map(m -> m.getRole().getName()).orElse("");
             default -> null;

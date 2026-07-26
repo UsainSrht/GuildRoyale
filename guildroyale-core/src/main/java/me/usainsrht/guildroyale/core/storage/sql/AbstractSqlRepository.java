@@ -59,15 +59,20 @@ public abstract class AbstractSqlRepository implements GuildRepository {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS guilds (
-                    id         TEXT PRIMARY KEY,
-                    name       TEXT NOT NULL UNIQUE,
-                    shortname  TEXT NOT NULL UNIQUE,
-                    icon_mat   TEXT,
-                    icon_data  BLOB,
-                    level      INTEGER NOT NULL DEFAULT 1,
-                    xp         INTEGER NOT NULL DEFAULT 0,
-                    created_at TEXT NOT NULL
+                    id           TEXT PRIMARY KEY,
+                    name         TEXT NOT NULL UNIQUE,
+                    shortname    TEXT NOT NULL UNIQUE,
+                    icon_mat     TEXT,
+                    icon_data    BLOB,
+                    level        INTEGER NOT NULL DEFAULT 1,
+                    xp           INTEGER NOT NULL DEFAULT 0,
+                    created_at   TEXT NOT NULL,
+                    owned_badges TEXT,
+                    active_badge TEXT
                 )""");
+
+            tryAddColumn(stmt, "guilds", "owned_badges", "TEXT");
+            tryAddColumn(stmt, "guilds", "active_badge", "TEXT");
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS guild_roles (
@@ -99,6 +104,24 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     PRIMARY KEY (guild_id, player_id),
                     FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
                 )""");
+
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS guild_storage (
+                    guild_id  TEXT NOT NULL,
+                    slot      INTEGER NOT NULL,
+                    item_mat  TEXT,
+                    item_data BLOB,
+                    PRIMARY KEY (guild_id, slot),
+                    FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
+                )""");
+        }
+    }
+
+    private static void tryAddColumn(Statement stmt, String table, String column, String type) {
+        try {
+            stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
+        } catch (SQLException ignored) {
+            // Column already exists
         }
     }
 
@@ -230,6 +253,7 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     deleteRolesAndMembers(conn, guild.getId().toString());
                     for (GuildRole role : guild.getRoles()) upsertRole(conn, guild.getId().toString(), role);
                     for (GuildMember member : guild.getMembers()) upsertMember(conn, guild.getId().toString(), member);
+                    replaceStorage(conn, guild);
                     conn.commit();
                 } catch (SQLException e) {
                     conn.rollback();
@@ -272,8 +296,11 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                 Instant createdAt = Instant.parse(rs.getString("created_at"));
                 SerializableItemStack icon = new SerializableItemStack(
                         rs.getString("icon_mat"), rs.getBytes("icon_data"));
+                Set<String> ownedBadges = parseBadges(rs.getString("owned_badges"));
+                String activeBadge = rs.getString("active_badge");
                 guild = new Guild(guildId, name, shortname, icon, level, xp,
-                        new ArrayList<>(), new ArrayList<>(), createdAt);
+                        new ArrayList<>(), new ArrayList<>(), createdAt,
+                        ownedBadges, activeBadge, new HashMap<>());
             }
         }
 
@@ -298,8 +325,6 @@ public abstract class AbstractSqlRepository implements GuildRepository {
         // Build index map for members
         Map<Integer, GuildRole> roleByIndex = new HashMap<>();
         roles.forEach(r -> roleByIndex.put(r.getIndex(), r));
-        // Re-add roles to clean guild object
-        guild.getRoles().forEach(r -> {}); // roles already added above via addRole
 
         // Load members
         try (PreparedStatement ps = conn.prepareStatement(
@@ -318,7 +343,30 @@ public abstract class AbstractSqlRepository implements GuildRepository {
             }
         }
 
+        Map<Integer, SerializableItemStack> storage = new TreeMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT slot, item_mat, item_data FROM guild_storage WHERE guild_id = ?")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    storage.put(rs.getInt("slot"),
+                            new SerializableItemStack(rs.getString("item_mat"), rs.getBytes("item_data")));
+                }
+            }
+        }
+        guild.setStorageContents(storage);
+
         return Optional.of(guild);
+    }
+
+    private static Set<String> parseBadges(String raw) {
+        Set<String> set = new LinkedHashSet<>();
+        if (raw == null || raw.isBlank()) return set;
+        for (String part : raw.split(",")) {
+            String trimmed = part.trim();
+            if (!trimmed.isEmpty()) set.add(trimmed);
+        }
+        return set;
     }
 
     private Set<GuildPermissionKey> loadPermissions(Connection conn, String guildId, int roleIndex) throws SQLException {
@@ -338,12 +386,13 @@ public abstract class AbstractSqlRepository implements GuildRepository {
 
     private void upsertGuild(Connection conn, Guild g) throws SQLException {
         String sql = """
-            INSERT INTO guilds (id, name, shortname, icon_mat, icon_data, level, xp, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO guilds (id, name, shortname, icon_mat, icon_data, level, xp, created_at, owned_badges, active_badge)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 name=excluded.name, shortname=excluded.shortname,
                 icon_mat=excluded.icon_mat, icon_data=excluded.icon_data,
-                level=excluded.level, xp=excluded.xp""";
+                level=excluded.level, xp=excluded.xp,
+                owned_badges=excluded.owned_badges, active_badge=excluded.active_badge""";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, g.getId().toString());
             ps.setString(2, g.getName());
@@ -353,7 +402,30 @@ public abstract class AbstractSqlRepository implements GuildRepository {
             ps.setInt(6, g.getLevel());
             ps.setLong(7, g.getXp());
             ps.setString(8, g.getCreatedAt().toString());
+            ps.setString(9, String.join(",", g.getOwnedBadges()));
+            ps.setString(10, g.getActiveBadgeId());
             ps.executeUpdate();
+        }
+    }
+
+    private void replaceStorage(Connection conn, Guild g) throws SQLException {
+        String guildId = g.getId().toString();
+        try (PreparedStatement ps = conn.prepareStatement("DELETE FROM guild_storage WHERE guild_id = ?")) {
+            ps.setString(1, guildId);
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO guild_storage (guild_id, slot, item_mat, item_data) VALUES (?, ?, ?, ?)")) {
+            for (Map.Entry<Integer, SerializableItemStack> entry : g.getStorage().entrySet()) {
+                SerializableItemStack item = entry.getValue();
+                if (item == null || item.isEmpty()) continue;
+                ps.setString(1, guildId);
+                ps.setInt(2, entry.getKey());
+                ps.setString(3, item.getMaterial());
+                ps.setBytes(4, item.getRawData());
+                ps.addBatch();
+            }
+            ps.executeBatch();
         }
     }
 

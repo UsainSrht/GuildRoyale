@@ -65,13 +65,24 @@ public final class GuildRole {
                 GuildPermissionKey.INVITE,
                 GuildPermissionKey.KICK,
                 GuildPermissionKey.GUILD_SETTINGS,
-                GuildPermissionKey.ICON_CHANGE
+                GuildPermissionKey.ICON_CHANGE,
+                GuildPermissionKey.SHORTNAME_CHANGE,
+                GuildPermissionKey.BADGE_MANAGE,
+                GuildPermissionKey.STORAGE_ACCESS,
+                GuildPermissionKey.BANK_VIEW,
+                GuildPermissionKey.BANK_DEPOSIT,
+                GuildPermissionKey.BANK_WITHDRAW
         ), SerializableItemStack.EMPTY);
     }
 
     /** Default Helper role. */
     public static GuildRole createHelper() {
-        return new GuildRole("Helper", 2, EnumSet.of(GuildPermissionKey.INVITE), SerializableItemStack.EMPTY);
+        return new GuildRole("Helper", 2, EnumSet.of(
+                GuildPermissionKey.INVITE,
+                GuildPermissionKey.STORAGE_ACCESS,
+                GuildPermissionKey.BANK_VIEW,
+                GuildPermissionKey.BANK_DEPOSIT
+        ), SerializableItemStack.EMPTY);
     }
 
     /** Default Member role with no special permissions. */

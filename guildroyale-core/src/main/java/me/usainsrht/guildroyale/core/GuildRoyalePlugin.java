@@ -6,6 +6,7 @@ import me.usainsrht.guildroyale.api.service.MemberService;
 import me.usainsrht.guildroyale.api.service.RoleService;
 import me.usainsrht.guildroyale.api.storage.GuildRepository;
 import me.usainsrht.guildroyale.core.config.ConfigManager;
+import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.config.MessagesManager;
 import me.usainsrht.guildroyale.core.dialog.DialogManager;
 import me.usainsrht.guildroyale.core.gui.GuiManager;
@@ -22,10 +23,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * GuildRoyale main plugin class.
- *
- * <p>A static instance holder ({@link #getInstance()}) is used by command subclasses
- * to access services without passing them through the command tree. This is a common
- * Paper plugin pattern and is safe because all access happens after {@code onEnable}.
  */
 public final class GuildRoyalePlugin extends JavaPlugin {
 
@@ -33,6 +30,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
 
     private ConfigManager configManager;
     private MessagesManager messagesManager;
+    private GuiConfig guiConfig;
     private FoliaScheduler scheduler;
     private GuildRepository repository;
     private GuildLogWriter logWriter;
@@ -45,22 +43,18 @@ public final class GuildRoyalePlugin extends JavaPlugin {
     private GuiManager guiManager;
     private DialogManager dialogManager;
 
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
-
     @Override
     public void onEnable() {
         instance = this;
 
-        // Config & messages
         saveDefaultConfig();
         configManager = new ConfigManager(this);
         messagesManager = new MessagesManager(this);
+        guiConfig = new GuiConfig(this);
 
-        // Infrastructure
         scheduler = new FoliaScheduler(this);
         logWriter = new GuildLogWriter(this);
 
-        // Storage
         repository = StorageFactory.create(this, configManager, scheduler);
         repository.init().whenComplete((v, ex) -> {
             if (ex != null) {
@@ -71,29 +65,24 @@ public final class GuildRoyalePlugin extends JavaPlugin {
             getSLF4JLogger().info("Storage backend initialised: {}", configManager.getStorageType());
         });
 
-        // Economy
-        EconomyProvider economy = EconomyProvider.load(getLogger());
+        EconomyProvider economy = EconomyProvider.load(getLogger(), getName());
 
-        // Services
-        guildService = new GuildServiceImpl(repository, configManager, economy);
+        guildService = new GuildServiceImpl(repository, configManager, economy, scheduler);
         memberService = new MemberServiceImpl(repository, configManager);
         roleService = new RoleServiceImpl(repository);
         leaderboardService = new LeaderboardServiceImpl(repository, configManager, scheduler);
         leaderboardService.startRefreshTask();
 
-        // GUI & Dialog
         guiManager = new GuiManager();
         dialogManager = new DialogManager();
 
-        // Listeners
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new GuiListener(guiManager), this);
         pm.registerEvents(new GuildEventListener(logWriter), this);
         pm.registerEvents(new PlayerQuitListener(guiManager), this);
 
-        // PlaceholderAPI
         if (pm.getPlugin("PlaceholderAPI") != null) {
-            new GuildRoyalePlaceholderExpansion(guildService, leaderboardService).register();
+            new GuildRoyalePlaceholderExpansion(this, guildService, leaderboardService).register();
             getSLF4JLogger().info("PlaceholderAPI integration enabled.");
         }
 
@@ -110,12 +99,11 @@ public final class GuildRoyalePlugin extends JavaPlugin {
         getSLF4JLogger().info("GuildRoyale disabled.");
     }
 
-    // ── Accessor ──────────────────────────────────────────────────────────────
-
     public static GuildRoyalePlugin getInstance() { return instance; }
 
     public ConfigManager getConfigManager() { return configManager; }
     public MessagesManager getMessages() { return messagesManager; }
+    public GuiConfig getGuiConfig() { return guiConfig; }
     public FoliaScheduler getScheduler() { return scheduler; }
     public GuildRepository getRepository() { return repository; }
 

@@ -7,6 +7,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.config.CommandConfig;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -19,7 +20,7 @@ public final class KickSubcommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> node(String name, String mainCmd) {
         return Commands.literal(name)
-                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_KICK))
+                .requires(src -> src.getSender().hasPermission(CommandConfig.PERM_KICK))
                 .executes(ctx -> {
                     ctx.getSource().getSender().sendMessage(
                             net.kyori.adventure.text.minimessage.MiniMessage.miniMessage()
@@ -38,8 +39,8 @@ public final class KickSubcommand {
         String targetName = StringArgumentType.getString(ctx, "player");
         Player target = Bukkit.getPlayerExact(targetName);
         if (target == null) {
-            player.sendMessage(plugin.getMessages().prefixed("player-not-found",
-                    Placeholder.unparsed("player", targetName)));
+            plugin.getMessages().send(player, "player-not-found",
+                    Placeholder.unparsed("player", targetName));
             return 0;
         }
 
@@ -47,21 +48,21 @@ public final class KickSubcommand {
                 plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenCompose(opt -> {
                     if (opt.isEmpty()) {
                         plugin.getScheduler().runForEntity(player, () ->
-                                player.sendMessage(plugin.getMessages().prefixed("not-in-guild")));
+                                plugin.getMessages().send(player, "not-in-guild"));
                         return java.util.concurrent.CompletableFuture.completedFuture(null);
                     }
                     return plugin.getMemberService().kick(opt.get().getId(), player.getUniqueId(), target.getUniqueId())
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s -> {
-                                        player.sendMessage(plugin.getMessages().prefixed("member-kicked",
-                                                Placeholder.unparsed("player", targetName)));
+                                        plugin.getMessages().send(player, "member-kicked",
+                                                Placeholder.unparsed("player", targetName));
                                         plugin.getScheduler().runForEntity(target, () ->
-                                                target.sendMessage(plugin.getMessages().prefixed("member-kicked-self",
-                                                        Placeholder.unparsed("guild", opt.get().getName()))));
+                                                plugin.getMessages().send(target, "member-kicked-self",
+                                                        Placeholder.unparsed("guild", opt.get().getName())));
                                     }
                                     case ActionResult.Failure f ->
-                                            player.sendMessage(plugin.getMessages().prefixed(f.reason()));
+                                            plugin.getMessages().send(player, f.reason());
                                 }
                             }));
                 })

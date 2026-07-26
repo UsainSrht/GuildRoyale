@@ -40,7 +40,11 @@ public final class GuiListener implements Listener {
 
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        if (event.getPlayer() instanceof org.bukkit.entity.Player player) {
+        if (event.getPlayer() instanceof Player player) {
+            AbstractGui gui = guiManager.getOpenGui(player.getUniqueId());
+            if (gui != null) {
+                gui.onClose(player);
+            }
             guiManager.unregister(player);
         }
     }

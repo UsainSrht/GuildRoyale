@@ -20,11 +20,20 @@ storage:
     pool-size: 10
 
 # ── Guild creation ───────────────────────────────────────────────
+# Each requirement can be enabled independently. When enabled, all
+# enabled requirements must be satisfied (AND).
 creation:
-  # Economy cost (requires Vault). 0 = free
-  money-cost: 500.0
-  # Items consumed on creation. Leave empty list for no requirement.
-  item-requirements: []
+  permission:
+    enabled: true
+    node: guildroyale.create
+  money:
+    enabled: true
+    cost: 500.0
+  items:
+    enabled: false
+    requirements:
+      - material: DIAMOND
+        amount: 10
 
 # ── Shortname change cost ────────────────────────────────────────
 shortname-change-cost: 100.0
@@ -34,8 +43,34 @@ xp:
   # XP required for level n = base * (multiplier ^ (n - 1))
   base: 1000
   multiplier: 1.5
-  # Maximum guild level (1–10 supported by API)
+  # Maximum guild level. Set to 0 (or negative) for unlimited.
   level-cap: 10
+
+# ── Feature unlock levels ────────────────────────────────────────
+features:
+  shortname:
+    unlock-level: 2
+  badge:
+    unlock-level: 5
+  storage:
+    unlock-level: 1
+    slots-per-level: 9
+    max-slots: 54
+  bank:
+    unlock-level: 2
+
+# ── Badges (MiniMessage display text) ────────────────────────────
+# cost > 0 = buyable with player economy; cost 0 = grant-only
+# grantable = can be given via /guildadmin badge grant
+badges:
+  pioneer:
+    display: "<gold>✦ Pioneer</gold>"
+    cost: 1000.0
+    grantable: true
+  veteran:
+    display: "<aqua>Veteran</aqua>"
+    cost: 0
+    grantable: true
 
 # ── Leaderboard ──────────────────────────────────────────────────
 leaderboard:
@@ -62,21 +97,65 @@ commands:
     # Additional aliases (Brigadier registers these on startup)
     aliases:
       - g
-    # Individual subcommand labels — rename freely without breaking permissions
+    # Subcommand labels — string form or { name, aliases, children }
+    # Permission nodes never change when you rename labels.
     subcommands:
-      create:      create
-      disband:     disband
-      info:        info
-      invite:      invite
-      join:        join
-      leave:       leave
-      kick:        kick
-      role:        role
-      icon:        icon
-      shortname:   shortname
-      leaderboard: leaderboard
-      leader:      leader
-      menu:        menu
+      create:
+        name: create
+        aliases: [c, new]
+      disband: disband
+      info: info
+      invite: invite
+      join: join
+      leave: leave
+      kick: kick
+      role:
+        name: role
+        aliases: [roles]
+        children:
+          create: create
+          delete: delete
+          rename: rename
+          setpermission:
+            name: setpermission
+            aliases: [perm, permission]
+      icon: icon
+      shortname:
+        name: shortname
+        aliases: [tag, sn]
+      leaderboard:
+        name: leaderboard
+        aliases: [lb, top]
+      leader: leader
+      menu:
+        name: menu
+        aliases: [gui, hub]
+      badge:
+        name: badge
+        aliases: [badges]
+        children:
+          list: list
+          buy: buy
+          equip: equip
+      storage:
+        name: storage
+        aliases: [chest]
+      bank:
+        name: bank
+        aliases: [b]
+        children:
+          balance:
+            name: balance
+            aliases: [bal]
+          deposit:
+            name: deposit
+            aliases: [dep]
+          withdraw:
+            name: withdraw
+            aliases: [with]
+      help:
+        name: help
+        aliases: [?]
 
   admin:
     # The primary admin command name (default: /guildadmin)
@@ -84,10 +163,15 @@ commands:
     aliases:
       - ga
     subcommands:
-      reload:   reload
-      addxp:    addxp
+      reload: reload
+      addxp: addxp
       setlevel: setlevel
-      delete:   delete
+      delete: delete
+      badge:
+        name: badge
+        children:
+          grant: grant
+          revoke: revoke
 
 # ── Default roles ────────────────────────────────────────────────
 # Index 0 is always Leader (full permissions, cannot be deleted or customised here)
@@ -100,10 +184,19 @@ default-roles:
       - KICK
       - GUILD_SETTINGS
       - ICON_CHANGE
+      - SHORTNAME_CHANGE
+      - BADGE_MANAGE
+      - STORAGE_ACCESS
+      - BANK_VIEW
+      - BANK_DEPOSIT
+      - BANK_WITHDRAW
   - name: Helper
     index: 2
     permissions:
       - INVITE
+      - STORAGE_ACCESS
+      - BANK_VIEW
+      - BANK_DEPOSIT
   - name: Member
     index: 3
     permissions: []

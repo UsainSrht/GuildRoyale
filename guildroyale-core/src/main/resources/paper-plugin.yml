@@ -1,5 +1,5 @@
 name: GuildRoyale
-version: '1.0.0-SNAPSHOT'
+version: '${project.version}'
 main: me.usainsrht.guildroyale.core.GuildRoyalePlugin
 loader: me.usainsrht.guildroyale.core.bootstrap.GuildRoyaleLoader
 bootstrapper: me.usainsrht.guildroyale.core.bootstrap.GuildRoyaleBootstrap
@@ -7,8 +7,15 @@ api-version: '1.21'
 description: A modern Minecraft guilds plugin with Folia support
 folia-supported: true
 authors:
-  - GuildRoyale
+  - UsainSrht
 
-soft-depend:
-  - PlaceholderAPI
-  - Vault
+dependencies:
+  server:
+    VaultUnlocked:
+      required: true
+      load: BEFORE
+      join-classpath: true
+    PlaceholderAPI:
+      required: false
+      load: BEFORE
+      join-classpath: true

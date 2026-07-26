@@ -1,17 +1,25 @@
 package me.usainsrht.guildroyale.core.service;
 
 import me.usainsrht.guildroyale.api.domain.*;
+import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.api.service.GuildService;
 import me.usainsrht.guildroyale.api.storage.GuildRepository;
-import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
+import me.usainsrht.guildroyale.core.config.BadgeDefinition;
 import me.usainsrht.guildroyale.core.config.ConfigManager;
-import me.usainsrht.guildroyale.core.event.*;
+import me.usainsrht.guildroyale.core.config.ItemRequirement;
 import me.usainsrht.guildroyale.core.event.GuildCreatedEvent;
 import me.usainsrht.guildroyale.core.event.GuildDisbandedEvent;
 import me.usainsrht.guildroyale.core.event.GuildLevelUpEvent;
 import me.usainsrht.guildroyale.core.event.GuildXpGainedEvent;
+import me.usainsrht.guildroyale.core.feature.FeatureGate;
+import me.usainsrht.guildroyale.core.feature.GuildFeature;
+import me.usainsrht.guildroyale.core.scheduler.FoliaScheduler;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import java.time.Instant;
 import java.util.*;
@@ -29,13 +37,21 @@ public final class GuildServiceImpl implements GuildService {
     private final GuildRepository repo;
     private final ConfigManager config;
     private final EconomyProvider economy;
+    private final FoliaScheduler scheduler;
+    private final FeatureGate featureGate;
     private final PermissionEvaluatorImpl evaluator = new PermissionEvaluatorImpl();
 
-    public GuildServiceImpl(GuildRepository repo, ConfigManager config, EconomyProvider economy) {
+    public GuildServiceImpl(GuildRepository repo, ConfigManager config,
+                            EconomyProvider economy, FoliaScheduler scheduler) {
         this.repo = repo;
         this.config = config;
         this.economy = economy;
+        this.scheduler = scheduler;
+        this.featureGate = new FeatureGate(config);
     }
+
+    public FeatureGate featureGate() { return featureGate; }
+    public EconomyProvider economy() { return economy; }
 
     // ── Creation ──────────────────────────────────────────────────────────────
 
@@ -48,8 +64,18 @@ public final class GuildServiceImpl implements GuildService {
             return done(ActionResult.failure("guild-shortname-invalid"));
         }
 
-        double cost = config.getCreationMoneyCost();
-        if (!economy.has(ownerPlayerId, cost)) {
+        Player online = Bukkit.getPlayer(ownerPlayerId);
+        if (online == null || !online.isOnline()) {
+            return done(ActionResult.failure("player-not-found"));
+        }
+
+        if (config.isCreationPermissionEnabled()
+                && !online.hasPermission(config.getCreationPermissionNode())) {
+            return done(ActionResult.failure("guild-creation-no-permission"));
+        }
+
+        double cost = config.isCreationMoneyEnabled() ? config.getCreationMoneyCost() : 0;
+        if (config.isCreationMoneyEnabled() && !economy.has(ownerPlayerId, cost)) {
             return done(ActionResult.failure("guild-creation-insufficient-funds"));
         }
 
@@ -57,13 +83,16 @@ public final class GuildServiceImpl implements GuildService {
             if (inGuild) return done(ActionResult.failure("already-in-guild"));
             return repo.existsByName(name).thenCompose(nameTaken -> {
                 if (nameTaken) return done(ActionResult.failure("guild-name-taken"));
-                return repo.findByName(shortname).thenCompose(shortTaken -> {
-                    // Check shortname taken by finding any guild with that shortname
-                    return repo.findAll().thenCompose(all -> {
-                        boolean shortnameUsed = all.stream().anyMatch(g -> g.getShortname().equalsIgnoreCase(shortname));
-                        if (shortnameUsed) return done(ActionResult.failure("guild-shortname-taken"));
+                return repo.findAll().thenCompose(all -> {
+                    boolean shortnameUsed = all.stream()
+                            .anyMatch(g -> g.getShortname().equalsIgnoreCase(shortname));
+                    if (shortnameUsed) return done(ActionResult.failure("guild-shortname-taken"));
 
-                        if (!economy.withdraw(ownerPlayerId, cost)) {
+                    return consumeCreationItems(online).thenCompose(itemsOk -> {
+                        if (!itemsOk) return done(ActionResult.failure("guild-creation-missing-items"));
+
+                        if (config.isCreationMoneyEnabled() && !economy.withdraw(ownerPlayerId, cost)) {
+                            refundCreationItems(online);
                             return done(ActionResult.failure("guild-creation-insufficient-funds"));
                         }
 
@@ -82,6 +111,7 @@ public final class GuildServiceImpl implements GuildService {
                                 now);
 
                         return repo.save(guild).thenApply(v -> {
+                            economy.createGuildAccount(guildId, name);
                             GuildCreatedEvent event = new GuildCreatedEvent(guild, ownerPlayerId);
                             Bukkit.getPluginManager().callEvent(event);
                             return ActionResult.success();
@@ -90,6 +120,59 @@ public final class GuildServiceImpl implements GuildService {
                 });
             });
         });
+    }
+
+    private CompletableFuture<Boolean> consumeCreationItems(Player player) {
+        if (!config.isCreationItemsEnabled()) {
+            return done(true);
+        }
+        List<ItemRequirement> requirements = config.getCreationItemRequirements();
+        if (requirements.isEmpty()) return done(true);
+
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        scheduler.runForEntity(player, () -> {
+            if (!hasItems(player, requirements)) {
+                future.complete(false);
+                return;
+            }
+            removeItems(player, requirements);
+            future.complete(true);
+        });
+        return future;
+    }
+
+    private void refundCreationItems(Player player) {
+        if (!config.isCreationItemsEnabled()) return;
+        List<ItemRequirement> requirements = config.getCreationItemRequirements();
+        if (requirements.isEmpty() || !player.isOnline()) return;
+        scheduler.runForEntity(player, () -> giveItems(player, requirements));
+    }
+
+    private static boolean hasItems(Player player, List<ItemRequirement> requirements) {
+        PlayerInventory inv = player.getInventory();
+        for (ItemRequirement req : requirements) {
+            Material mat = Material.matchMaterial(req.material());
+            if (mat == null) return false;
+            if (!inv.containsAtLeast(new ItemStack(mat), req.amount())) return false;
+        }
+        return true;
+    }
+
+    private static void removeItems(Player player, List<ItemRequirement> requirements) {
+        PlayerInventory inv = player.getInventory();
+        for (ItemRequirement req : requirements) {
+            Material mat = Material.matchMaterial(req.material());
+            if (mat == null) continue;
+            inv.removeItem(new ItemStack(mat, req.amount()));
+        }
+    }
+
+    private static void giveItems(Player player, List<ItemRequirement> requirements) {
+        for (ItemRequirement req : requirements) {
+            Material mat = Material.matchMaterial(req.material());
+            if (mat == null) continue;
+            player.getInventory().addItem(new ItemStack(mat, req.amount()));
+        }
     }
 
     // ── Disband ───────────────────────────────────────────────────────────────
@@ -141,8 +224,9 @@ public final class GuildServiceImpl implements GuildService {
             GuildXpGainedEvent xpEvent = new GuildXpGainedEvent(guild, amount);
             Bukkit.getPluginManager().callEvent(xpEvent);
 
+            int levelCap = config.getLevelCap();
             int levelsGained = 0;
-            while (!new GuildLevel(guild.getLevel()).isMaxLevel()) {
+            while (!new GuildLevel(guild.getLevel()).isMaxLevel(levelCap)) {
                 long required = xpRequiredForLevel(guild.getLevel() + 1);
                 if (guild.getXp() < required) break;
                 guild.setXp(guild.getXp() - required);
@@ -178,17 +262,24 @@ public final class GuildServiceImpl implements GuildService {
         if (!SHORTNAME_PATTERN.matcher(shortname).matches()) {
             return done(ActionResult.failure("guild-shortname-invalid"));
         }
-        double cost = config.getShortnameChangeCost();
-        if (!economy.has(requesterId, cost)) {
-            return done(ActionResult.failure("shortname-insufficient-funds"));
-        }
-        return repo.findAll().thenCompose(all -> {
-            boolean taken = all.stream().anyMatch(g -> !g.getId().equals(guildId)
-                    && g.getShortname().equalsIgnoreCase(shortname));
-            if (taken) return done(ActionResult.failure("guild-shortname-taken"));
-            return mutateGuild(guildId, requesterId, GuildPermissionKey.SHORTNAME_CHANGE, guild -> {
-                economy.withdraw(requesterId, cost);
-                guild.setShortname(shortname);
+        return repo.findById(guildId).thenCompose(opt -> {
+            if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
+            Guild guild = opt.get();
+            if (!featureGate.isUnlocked(guild, GuildFeature.SHORTNAME)) {
+                return done(ActionResult.failure("feature-locked"));
+            }
+            double cost = config.getShortnameChangeCost();
+            if (!economy.has(requesterId, cost)) {
+                return done(ActionResult.failure("shortname-insufficient-funds"));
+            }
+            return repo.findAll().thenCompose(all -> {
+                boolean taken = all.stream().anyMatch(g -> !g.getId().equals(guildId)
+                        && g.getShortname().equalsIgnoreCase(shortname));
+                if (taken) return done(ActionResult.failure("guild-shortname-taken"));
+                return mutateGuild(guildId, requesterId, GuildPermissionKey.SHORTNAME_CHANGE, g -> {
+                    economy.withdraw(requesterId, cost);
+                    g.setShortname(shortname);
+                });
             });
         });
     }
@@ -206,14 +297,173 @@ public final class GuildServiceImpl implements GuildService {
         });
     }
 
+    // ── Badges ────────────────────────────────────────────────────────────────
+
+    @Override
+    public CompletableFuture<ActionResult> buyBadge(UUID guildId, UUID requesterId, String badgeId) {
+        Optional<BadgeDefinition> badgeOpt = config.getBadge(badgeId);
+        if (badgeOpt.isEmpty()) return done(ActionResult.failure("badge-not-found"));
+        BadgeDefinition badge = badgeOpt.get();
+        if (!badge.isBuyable()) return done(ActionResult.failure("badge-not-buyable"));
+
+        return repo.findById(guildId).thenCompose(opt -> {
+            if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
+            Guild guild = opt.get();
+            if (!featureGate.isUnlocked(guild, GuildFeature.BADGE)) {
+                return done(ActionResult.failure("feature-locked"));
+            }
+            if (guild.ownsBadge(badgeId)) return done(ActionResult.failure("badge-already-owned"));
+            if (!economy.has(requesterId, badge.cost())) {
+                return done(ActionResult.failure("badge-insufficient-funds"));
+            }
+            return mutateGuild(guildId, requesterId, GuildPermissionKey.BADGE_MANAGE, g -> {
+                if (!economy.withdraw(requesterId, badge.cost())) {
+                    throw new IllegalStateException("badge-insufficient-funds");
+                }
+                g.addBadge(badgeId);
+            });
+        });
+    }
+
+    @Override
+    public CompletableFuture<ActionResult> equipBadge(UUID guildId, UUID requesterId, String badgeId) {
+        return repo.findById(guildId).thenCompose(opt -> {
+            if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
+            Guild guild = opt.get();
+            if (!featureGate.isUnlocked(guild, GuildFeature.BADGE)) {
+                return done(ActionResult.failure("feature-locked"));
+            }
+            if (!guild.ownsBadge(badgeId)) return done(ActionResult.failure("badge-not-owned"));
+            return mutateGuild(guildId, requesterId, GuildPermissionKey.BADGE_MANAGE, g -> {
+                g.setActiveBadgeId(badgeId);
+            });
+        });
+    }
+
+    @Override
+    public CompletableFuture<ActionResult> adminGrantBadge(UUID guildId, String badgeId) {
+        Optional<BadgeDefinition> badgeOpt = config.getBadge(badgeId);
+        if (badgeOpt.isEmpty()) return done(ActionResult.failure("badge-not-found"));
+        if (!badgeOpt.get().grantable()) return done(ActionResult.failure("badge-not-grantable"));
+
+        return repo.findById(guildId).thenCompose(opt -> {
+            if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
+            Guild guild = opt.get();
+            if (guild.ownsBadge(badgeId)) return done(ActionResult.failure("badge-already-owned"));
+            guild.addBadge(badgeId);
+            return repo.save(guild).thenApply(v -> ActionResult.success());
+        });
+    }
+
+    @Override
+    public CompletableFuture<ActionResult> adminRevokeBadge(UUID guildId, String badgeId) {
+        return repo.findById(guildId).thenCompose(opt -> {
+            if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
+            Guild guild = opt.get();
+            if (!guild.removeBadge(badgeId)) return done(ActionResult.failure("badge-not-owned"));
+            return repo.save(guild).thenApply(v -> ActionResult.success());
+        });
+    }
+
+    // ── Storage ───────────────────────────────────────────────────────────────
+
+    @Override
+    public CompletableFuture<ActionResult> saveStorage(UUID guildId, UUID requesterId,
+                                                       Map<Integer, SerializableItemStack> contents) {
+        return repo.findById(guildId).thenCompose(opt -> {
+            if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
+            Guild guild = opt.get();
+            if (!featureGate.isUnlocked(guild, GuildFeature.STORAGE)) {
+                return done(ActionResult.failure("feature-locked"));
+            }
+            return mutateGuild(guildId, requesterId, GuildPermissionKey.STORAGE_ACCESS, g -> {
+                int maxSlots = config.getStorageSlotsForLevel(g.getLevel());
+                Map<Integer, SerializableItemStack> clipped = new TreeMap<>();
+                contents.forEach((slot, item) -> {
+                    if (slot >= 0 && slot < maxSlots && item != null && !item.isEmpty()) {
+                        clipped.put(slot, item);
+                    }
+                });
+                g.setStorageContents(clipped);
+            });
+        });
+    }
+
+    // ── Bank ──────────────────────────────────────────────────────────────────
+
+    @Override
+    public CompletableFuture<ActionResult> bankDeposit(UUID guildId, UUID requesterId, double amount) {
+        if (amount <= 0) return done(ActionResult.failure("bank-invalid-amount"));
+        return repo.findById(guildId).thenCompose(opt -> {
+            if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
+            Guild guild = opt.get();
+            if (!featureGate.isUnlocked(guild, GuildFeature.BANK)) {
+                return done(ActionResult.failure("feature-locked"));
+            }
+            Optional<GuildMember> memberOpt = guild.getMember(requesterId);
+            if (memberOpt.isEmpty()) return done(ActionResult.failure("not-in-guild"));
+            if (!evaluator.canAct(memberOpt.get(), GuildPermissionKey.BANK_DEPOSIT)) {
+                return done(ActionResult.failure("no-permission"));
+            }
+            if (!economy.has(requesterId, amount)) {
+                return done(ActionResult.failure("bank-insufficient-funds"));
+            }
+            if (!economy.withdraw(requesterId, amount)) {
+                return done(ActionResult.failure("bank-insufficient-funds"));
+            }
+            if (!economy.deposit(guildId, amount)) {
+                economy.deposit(requesterId, amount);
+                return done(ActionResult.failure("bank-transfer-failed"));
+            }
+            return done(ActionResult.success());
+        });
+    }
+
+    @Override
+    public CompletableFuture<ActionResult> bankWithdraw(UUID guildId, UUID requesterId, double amount) {
+        if (amount <= 0) return done(ActionResult.failure("bank-invalid-amount"));
+        return repo.findById(guildId).thenCompose(opt -> {
+            if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
+            Guild guild = opt.get();
+            if (!featureGate.isUnlocked(guild, GuildFeature.BANK)) {
+                return done(ActionResult.failure("feature-locked"));
+            }
+            Optional<GuildMember> memberOpt = guild.getMember(requesterId);
+            if (memberOpt.isEmpty()) return done(ActionResult.failure("not-in-guild"));
+            if (!evaluator.canAct(memberOpt.get(), GuildPermissionKey.BANK_WITHDRAW)) {
+                return done(ActionResult.failure("no-permission"));
+            }
+            if (!economy.has(guildId, amount)) {
+                return done(ActionResult.failure("bank-insufficient-guild-funds"));
+            }
+            if (!economy.withdraw(guildId, amount)) {
+                return done(ActionResult.failure("bank-insufficient-guild-funds"));
+            }
+            if (!economy.deposit(requesterId, amount)) {
+                economy.deposit(guildId, amount);
+                return done(ActionResult.failure("bank-transfer-failed"));
+            }
+            return done(ActionResult.success());
+        });
+    }
+
     // ── Admin ─────────────────────────────────────────────────────────────────
 
     @Override
     public CompletableFuture<Void> adminSetLevel(UUID guildId, int level) {
+        int cap = config.getLevelCap();
+        final int clamped;
+        if (level < GuildLevel.MIN_LEVEL) {
+            clamped = GuildLevel.MIN_LEVEL;
+        } else if (cap > 0 && level > cap) {
+            clamped = cap;
+        } else {
+            clamped = level;
+        }
         return repo.findById(guildId).thenCompose(opt -> {
             if (opt.isEmpty()) return CompletableFuture.completedFuture(null);
             Guild guild = opt.get();
-            guild.setLevel(level);
+            guild.setLevel(clamped);
             guild.setXp(0);
             return repo.save(guild);
         });
@@ -246,7 +496,11 @@ public final class GuildServiceImpl implements GuildService {
             if (!evaluator.canAct(memberOpt.get(), key)) {
                 return done(ActionResult.failure("no-permission"));
             }
-            mutator.mutate(guild);
+            try {
+                mutator.mutate(guild);
+            } catch (IllegalStateException ex) {
+                return done(ActionResult.failure(ex.getMessage()));
+            }
             return repo.save(guild).thenApply(v -> ActionResult.success());
         });
     }

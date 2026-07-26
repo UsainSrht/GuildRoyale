@@ -31,6 +31,21 @@
             <id>jitpack.io</id>
             <url>https://jitpack.io</url>
         </repository>
+        <repository>
+            <id>codemc-creatorfromhell</id>
+            <url>https://repo.codemc.io/repository/creatorfromhell/</url>
+        </repository>
+        <repository>
+            <id>codemc</id>
+            <url>https://repo.codemc.io/repository/maven-public/</url>
+        </repository>
+        <repository>
+            <id>codemc-snapshots</id>
+            <url>https://repo.codemc.io/repository/maven-snapshots/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -98,17 +113,35 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- VaultAPI — optional economy integration -->
+        <!-- VaultUnlockedAPI — economy integration (guild bank accounts) -->
         <dependency>
-            <groupId>com.github.MilkBowl</groupId>
-            <artifactId>VaultAPI</artifactId>
-            <version>1.7.1</version>
+            <groupId>net.milkbowl.vault</groupId>
+            <artifactId>VaultUnlockedAPI</artifactId>
+            <version>2.16</version>
             <scope>provided</scope>
             <optional>true</optional>
+        </dependency>
+
+        <!-- ItemAPI — YamlItem + ItemText (shadeable; from CodeMC ItemAPI #4) -->
+        <dependency>
+            <groupId>me.usainsrht.itemapi</groupId>
+            <artifactId>itemtext</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>me.usainsrht.itemapi</groupId>
+            <artifactId>yamlitem</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -122,11 +155,13 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>true</createDependencyReducedPom>
-                            <!-- Only guildroyale-api (local module) is bundled;
-                                 all external libraries are loaded at runtime by GuildRoyaleLoader. -->
+                            <!-- API module + shadeable ItemAPI libraries are bundled;
+                                 other external libraries are loaded at runtime by GuildRoyaleLoader. -->
                             <artifactSet>
                                 <includes>
                                     <include>me.usainsrht.guildroyale:guildroyale-api</include>
+                                    <include>me.usainsrht.itemapi:itemtext</include>
+                                    <include>me.usainsrht.itemapi:yamlitem</include>
                                 </includes>
                             </artifactSet>
                             <filters>

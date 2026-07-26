@@ -6,6 +6,8 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.config.CommandConfig;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 
 /** {@code /guild leave} */
@@ -16,7 +18,7 @@ public final class LeaveSubcommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
         return Commands.literal(name)
-                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_LEAVE))
+                .requires(src -> src.getSender().hasPermission(CommandConfig.PERM_LEAVE))
                 .executes(LeaveSubcommand::execute);
     }
 
@@ -29,17 +31,18 @@ public final class LeaveSubcommand {
                 plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenCompose(opt -> {
                     if (opt.isEmpty()) {
                         plugin.getScheduler().runForEntity(player, () ->
-                                player.sendMessage(plugin.getMessages().prefixed("not-in-guild")));
+                                plugin.getMessages().send(player, "not-in-guild"));
                         return java.util.concurrent.CompletableFuture.completedFuture(null);
                     }
+                    String guildName = opt.get().getName();
                     return plugin.getMemberService().leave(opt.get().getId(), player.getUniqueId())
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s ->
-                                            player.sendMessage(plugin.getMessages().prefixed("member-left-self",
-                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("guild", opt.get().getName())));
+                                            plugin.getMessages().send(player, "member-left-self",
+                                                    Placeholder.unparsed("guild", guildName));
                                     case ActionResult.Failure f ->
-                                            player.sendMessage(plugin.getMessages().prefixed(f.reason()));
+                                            plugin.getMessages().send(player, f.reason());
                                 }
                             }));
                 })

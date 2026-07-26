@@ -1,5 +1,6 @@
 package me.usainsrht.guildroyale.core.config;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -7,38 +8,30 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Reads command-name configuration from {@code config.yml} at bootstrap time,
- * before the plugin instance is available.
+ * Reads command-name configuration from {@code config.yml} at bootstrap time.
  *
- * <p><b>Note:</b> command names (and aliases) are registered with Brigadier
- * at server start-up. Changes require a full server restart to take effect.
+ * <p>Supports both legacy string labels and the richer form:
+ * <pre>
+ * create: create
+ * bank:
+ *   name: bank
+ *   aliases: [b]
+ *   children:
+ *     deposit:
+ *       name: deposit
+ *       aliases: [dep]
+ * </pre>
  *
- * <p>Permission nodes are <em>hardcoded</em> and never change regardless of
- * the configured label:
- * <ul>
- *   <li>{@code guildroyale.command.create}</li>
- *   <li>{@code guildroyale.command.disband}</li>
- *   <li>{@code guildroyale.command.info}</li>
- *   <li>{@code guildroyale.command.invite}</li>
- *   <li>{@code guildroyale.command.join}</li>
- *   <li>{@code guildroyale.command.leave}</li>
- *   <li>{@code guildroyale.command.kick}</li>
- *   <li>{@code guildroyale.command.role}</li>
- *   <li>{@code guildroyale.command.icon}</li>
- *   <li>{@code guildroyale.command.shortname}</li>
- *   <li>{@code guildroyale.command.leaderboard}</li>
- *   <li>{@code guildroyale.command.leader}</li>
- *   <li>{@code guildroyale.command.menu}</li>
- *   <li>{@code guildroyale.admin} — guards the entire admin command tree</li>
- * </ul>
+ * <p>Permission nodes are hardcoded and never change when labels are renamed.
  */
 public final class CommandConfig {
 
-    // ── Hardcoded permission nodes ───────────────────────────────
     public static final String PERM_CREATE      = "guildroyale.command.create";
     public static final String PERM_DISBAND     = "guildroyale.command.disband";
     public static final String PERM_INFO        = "guildroyale.command.info";
@@ -52,35 +45,48 @@ public final class CommandConfig {
     public static final String PERM_LEADERBOARD = "guildroyale.command.leaderboard";
     public static final String PERM_LEADER      = "guildroyale.command.leader";
     public static final String PERM_MENU        = "guildroyale.command.menu";
+    public static final String PERM_BADGE       = "guildroyale.command.badge";
+    public static final String PERM_STORAGE     = "guildroyale.command.storage";
+    public static final String PERM_BANK        = "guildroyale.command.bank";
+    public static final String PERM_HELP        = "guildroyale.command.help";
     public static final String PERM_ADMIN       = "guildroyale.admin";
 
-    // ── Resolved names ───────────────────────────────────────────
+    /** A resolved command/subcommand label with optional aliases and nested children. */
+    public record Spec(String name, List<String> aliases, Map<String, Spec> children) {
+        public Spec {
+            aliases = aliases == null ? List.of() : List.copyOf(aliases);
+            children = children == null ? Map.of() : Map.copyOf(children);
+        }
+
+        public static Spec of(String name) {
+            return new Spec(name, List.of(), Map.of());
+        }
+
+        public Spec child(String key, String defaultName) {
+            Spec child = children.get(key);
+            return child != null ? child : of(defaultName);
+        }
+    }
+
     private final String guildName;
     private final List<String> guildAliases;
-    private final Map<String, String> guildSubcommands;
+    private final Map<String, Spec> guildSubcommands;
 
     private final String adminName;
     private final List<String> adminAliases;
-    private final Map<String, String> adminSubcommands;
+    private final Map<String, Spec> adminSubcommands;
 
     private CommandConfig(
-            String guildName, List<String> guildAliases, Map<String, String> guildSubcommands,
-            String adminName, List<String> adminAliases, Map<String, String> adminSubcommands) {
+            String guildName, List<String> guildAliases, Map<String, Spec> guildSubcommands,
+            String adminName, List<String> adminAliases, Map<String, Spec> adminSubcommands) {
         this.guildName = guildName;
-        this.guildAliases = guildAliases;
-        this.guildSubcommands = guildSubcommands;
+        this.guildAliases = List.copyOf(guildAliases);
+        this.guildSubcommands = Map.copyOf(guildSubcommands);
         this.adminName = adminName;
-        this.adminAliases = adminAliases;
-        this.adminSubcommands = adminSubcommands;
+        this.adminAliases = List.copyOf(adminAliases);
+        this.adminSubcommands = Map.copyOf(adminSubcommands);
     }
 
-    /**
-     * Reads command configuration from {@code config.yml} inside the plugin data directory.
-     * Falls back to bundled defaults when the file does not yet exist.
-     *
-     * @param dataDirectory the plugin data folder path (from {@code BootstrapContext.getDataDirectory()})
-     * @param resourceLoader class-loader used to locate the bundled {@code config.yml}
-     */
     public static CommandConfig load(Path dataDirectory, ClassLoader resourceLoader) {
         YamlConfiguration cfg = new YamlConfiguration();
 
@@ -89,7 +95,6 @@ public final class CommandConfig {
             cfg = YamlConfiguration.loadConfiguration(file);
         }
 
-        // Merge bundled defaults so every key has a value
         InputStream defaultStream = resourceLoader.getResourceAsStream("config.yml");
         if (defaultStream != null) {
             YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
@@ -97,64 +102,116 @@ public final class CommandConfig {
             cfg.setDefaults(defaults);
         }
 
-        // ── Guild ────────────────────────────────────────────────
         String guildName = cfg.getString("commands.guild.name", "guild");
-
         List<String> guildAliases = cfg.getStringList("commands.guild.aliases");
         if (guildAliases.isEmpty()) guildAliases = List.of("g");
 
-        Map<String, String> guildSubs = Map.ofEntries(
-                entry(cfg, "commands.guild.subcommands.create",      "create"),
-                entry(cfg, "commands.guild.subcommands.disband",     "disband"),
-                entry(cfg, "commands.guild.subcommands.info",        "info"),
-                entry(cfg, "commands.guild.subcommands.invite",      "invite"),
-                entry(cfg, "commands.guild.subcommands.join",        "join"),
-                entry(cfg, "commands.guild.subcommands.leave",       "leave"),
-                entry(cfg, "commands.guild.subcommands.kick",        "kick"),
-                entry(cfg, "commands.guild.subcommands.role",        "role"),
-                entry(cfg, "commands.guild.subcommands.icon",        "icon"),
-                entry(cfg, "commands.guild.subcommands.shortname",   "shortname"),
-                entry(cfg, "commands.guild.subcommands.leaderboard", "leaderboard"),
-                entry(cfg, "commands.guild.subcommands.leader",      "leader"),
-                entry(cfg, "commands.guild.subcommands.menu",        "menu")
-        );
+        Map<String, Spec> guildSubs = new HashMap<>();
+        guildSubs.put("create",      readSpec(cfg, "commands.guild.subcommands.create", "create"));
+        guildSubs.put("disband",     readSpec(cfg, "commands.guild.subcommands.disband", "disband"));
+        guildSubs.put("info",        readSpec(cfg, "commands.guild.subcommands.info", "info"));
+        guildSubs.put("invite",      readSpec(cfg, "commands.guild.subcommands.invite", "invite"));
+        guildSubs.put("join",        readSpec(cfg, "commands.guild.subcommands.join", "join"));
+        guildSubs.put("leave",       readSpec(cfg, "commands.guild.subcommands.leave", "leave"));
+        guildSubs.put("kick",        readSpec(cfg, "commands.guild.subcommands.kick", "kick"));
+        guildSubs.put("role",        readSpec(cfg, "commands.guild.subcommands.role", "role"));
+        guildSubs.put("icon",        readSpec(cfg, "commands.guild.subcommands.icon", "icon"));
+        guildSubs.put("shortname",   readSpec(cfg, "commands.guild.subcommands.shortname", "shortname"));
+        guildSubs.put("leaderboard", readSpec(cfg, "commands.guild.subcommands.leaderboard", "leaderboard"));
+        guildSubs.put("leader",      readSpec(cfg, "commands.guild.subcommands.leader", "leader"));
+        guildSubs.put("menu",        readSpec(cfg, "commands.guild.subcommands.menu", "menu"));
+        guildSubs.put("badge",       readSpec(cfg, "commands.guild.subcommands.badge", "badge"));
+        guildSubs.put("storage",     readSpec(cfg, "commands.guild.subcommands.storage", "storage"));
+        guildSubs.put("bank",        readSpec(cfg, "commands.guild.subcommands.bank", "bank"));
+        guildSubs.put("help",        readSpec(cfg, "commands.guild.subcommands.help", "help"));
 
-        // ── Admin ────────────────────────────────────────────────
         String adminName = cfg.getString("commands.admin.name", "guildadmin");
-
         List<String> adminAliases = cfg.getStringList("commands.admin.aliases");
         if (adminAliases.isEmpty()) adminAliases = List.of("ga");
 
-        Map<String, String> adminSubs = Map.ofEntries(
-                entry(cfg, "commands.admin.subcommands.reload",   "reload"),
-                entry(cfg, "commands.admin.subcommands.addxp",    "addxp"),
-                entry(cfg, "commands.admin.subcommands.setlevel", "setlevel"),
-                entry(cfg, "commands.admin.subcommands.delete",   "delete")
-        );
+        Map<String, Spec> adminSubs = new HashMap<>();
+        adminSubs.put("reload",   readSpec(cfg, "commands.admin.subcommands.reload", "reload"));
+        adminSubs.put("addxp",    readSpec(cfg, "commands.admin.subcommands.addxp", "addxp"));
+        adminSubs.put("setlevel", readSpec(cfg, "commands.admin.subcommands.setlevel", "setlevel"));
+        adminSubs.put("delete",   readSpec(cfg, "commands.admin.subcommands.delete", "delete"));
+        adminSubs.put("badge",    readSpec(cfg, "commands.admin.subcommands.badge", "badge"));
 
         return new CommandConfig(guildName, guildAliases, guildSubs, adminName, adminAliases, adminSubs);
     }
 
-    // ── Accessors ────────────────────────────────────────────────
+    private static Spec readSpec(YamlConfiguration cfg, String path, String defaultName) {
+        if (cfg.isConfigurationSection(path)) {
+            ConfigurationSection section = cfg.getConfigurationSection(path);
+            if (section == null) {
+                return Spec.of(defaultName);
+            }
+            String name = section.getString("name", defaultName);
+            List<String> aliases = section.getStringList("aliases");
+            Map<String, Spec> children = new HashMap<>();
+            ConfigurationSection childSection = section.getConfigurationSection("children");
+            if (childSection != null) {
+                for (String key : childSection.getKeys(false)) {
+                    children.put(key, readSpecFromSection(childSection, key, key));
+                }
+            }
+            return new Spec(name, aliases, children);
+        }
+        return Spec.of(cfg.getString(path, defaultName));
+    }
 
-    /** The configured main {@code /guild}-style command name. */
-    public String guildName()           { return guildName; }
-    /** Aliases for the guild command. */
-    public List<String> guildAliases()  { return guildAliases; }
-    /** Resolved label for a guild subcommand key (e.g. {@code "create"}). */
-    public String guildSub(String key)  { return guildSubcommands.getOrDefault(key, key); }
+    private static Spec readSpecFromSection(ConfigurationSection parent, String key, String defaultName) {
+        String path = key;
+        if (parent.isConfigurationSection(path)) {
+            ConfigurationSection section = parent.getConfigurationSection(path);
+            if (section == null) {
+                return Spec.of(defaultName);
+            }
+            String name = section.getString("name", defaultName);
+            List<String> aliases = section.getStringList("aliases");
+            Map<String, Spec> children = new HashMap<>();
+            ConfigurationSection childSection = section.getConfigurationSection("children");
+            if (childSection != null) {
+                for (String childKey : childSection.getKeys(false)) {
+                    children.put(childKey, readSpecFromSection(childSection, childKey, childKey));
+                }
+            }
+            return new Spec(name, aliases, children);
+        }
+        return Spec.of(parent.getString(path, defaultName));
+    }
 
-    /** The configured main {@code /guildadmin}-style command name. */
-    public String adminName()           { return adminName; }
-    /** Aliases for the admin command. */
-    public List<String> adminAliases()  { return adminAliases; }
-    /** Resolved label for an admin subcommand key (e.g. {@code "reload"}). */
-    public String adminSub(String key)  { return adminSubcommands.getOrDefault(key, key); }
+    public String guildName() { return guildName; }
+    public List<String> guildAliases() { return guildAliases; }
 
-    // ── Helpers ──────────────────────────────────────────────────
+    public Spec guildSubSpec(String key) {
+        return guildSubcommands.getOrDefault(key, Spec.of(key));
+    }
 
-    private static Map.Entry<String, String> entry(YamlConfiguration cfg, String path, String def) {
-        return Map.entry(def, cfg.getString(path, def));
+    /** Resolved primary label for a guild subcommand key. */
+    public String guildSub(String key) {
+        return guildSubSpec(key).name();
+    }
+
+    public List<String> guildSubAliases(String key) {
+        return guildSubSpec(key).aliases();
+    }
+
+    public String adminName() { return adminName; }
+    public List<String> adminAliases() { return adminAliases; }
+
+    public Spec adminSubSpec(String key) {
+        return adminSubcommands.getOrDefault(key, Spec.of(key));
+    }
+
+    public String adminSub(String key) {
+        return adminSubSpec(key).name();
+    }
+
+    public List<String> adminSubAliases(String key) {
+        return adminSubSpec(key).aliases();
+    }
+
+    public Map<String, Spec> guildSubcommands() {
+        return Collections.unmodifiableMap(guildSubcommands);
     }
 }
-

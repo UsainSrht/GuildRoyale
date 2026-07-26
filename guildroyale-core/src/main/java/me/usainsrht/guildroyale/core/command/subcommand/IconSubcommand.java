@@ -6,6 +6,7 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.config.CommandConfig;
 import me.usainsrht.guildroyale.core.gui.impl.IconSelectionGui;
 import org.bukkit.entity.Player;
 
@@ -17,7 +18,7 @@ public final class IconSubcommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
         return Commands.literal(name)
-                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_ICON))
+                .requires(src -> src.getSender().hasPermission(CommandConfig.PERM_ICON))
                 .executes(IconSubcommand::execute);
     }
 
@@ -30,22 +31,22 @@ public final class IconSubcommand {
                 plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenAccept(opt ->
                         plugin.getScheduler().runForEntity(player, () -> {
                             if (opt.isEmpty()) {
-                                player.sendMessage(plugin.getMessages().prefixed("not-in-guild"));
+                                plugin.getMessages().send(player, "not-in-guild");
                                 return;
                             }
-                            new IconSelectionGui(player, icon -> {
-                                plugin.getScheduler().runAsync(() ->
-                                        plugin.getGuildService().setIcon(opt.get().getId(), player.getUniqueId(), icon)
-                                                .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
-                                                    switch (result) {
-                                                        case ActionResult.Success s ->
-                                                                player.sendMessage(plugin.getMessages().prefixed("icon-updated"));
-                                                        case ActionResult.Failure f ->
-                                                                player.sendMessage(plugin.getMessages().prefixed(f.reason()));
-                                                    }
-                                                }))
-                                );
-                            }).open(player);
+                            new IconSelectionGui(player, item ->
+                                    plugin.getScheduler().runAsync(() ->
+                                            plugin.getGuildService().setIcon(opt.get().getId(), player.getUniqueId(), item)
+                                                    .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
+                                                        switch (result) {
+                                                            case ActionResult.Success s ->
+                                                                    plugin.getMessages().send(player, "icon-updated");
+                                                            case ActionResult.Failure f ->
+                                                                    plugin.getMessages().send(player, f.reason());
+                                                        }
+                                                    }))
+                                    )
+                            ).open(player);
                         })
                 )
         );

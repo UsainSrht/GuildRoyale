@@ -1,17 +1,17 @@
 package me.usainsrht.guildroyale.api.domain;
 
 /**
- * Value object representing a guild's current level (1–10).
+ * Value object representing a guild's current level (minimum 1).
+ * The maximum level is enforced by configuration, not by this type.
  */
 public record GuildLevel(int level) {
 
     public static final int MIN_LEVEL = 1;
-    public static final int MAX_LEVEL = 10;
 
     public GuildLevel {
-        if (level < MIN_LEVEL || level > MAX_LEVEL) {
+        if (level < MIN_LEVEL) {
             throw new IllegalArgumentException(
-                    "Guild level must be between " + MIN_LEVEL + " and " + MAX_LEVEL + ", got " + level);
+                    "Guild level must be at least " + MIN_LEVEL + ", got " + level);
         }
     }
 
@@ -19,10 +19,20 @@ public record GuildLevel(int level) {
 
     public static GuildLevel min() { return new GuildLevel(MIN_LEVEL); }
 
-    public boolean isMaxLevel() { return level >= MAX_LEVEL; }
+    /**
+     * @param maxLevel configured cap; {@code <= 0} means unlimited
+     */
+    public boolean isMaxLevel(int maxLevel) {
+        return maxLevel > 0 && level >= maxLevel;
+    }
 
-    public GuildLevel next() {
-        if (isMaxLevel()) throw new IllegalStateException("Cannot advance past max level " + MAX_LEVEL);
+    /**
+     * @param maxLevel configured cap; {@code <= 0} means unlimited
+     */
+    public GuildLevel next(int maxLevel) {
+        if (isMaxLevel(maxLevel)) {
+            throw new IllegalStateException("Cannot advance past max level " + maxLevel);
+        }
         return new GuildLevel(level + 1);
     }
 

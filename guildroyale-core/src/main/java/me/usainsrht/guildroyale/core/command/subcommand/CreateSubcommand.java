@@ -6,11 +6,14 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.config.CommandConfig;
+import me.usainsrht.guildroyale.core.gui.CreateEligibility;
+import me.usainsrht.guildroyale.core.service.GuildServiceImpl;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 
 /**
  * {@code /guild create} — opens the guild creation dialog.
- * The actual creation is completed asynchronously in DialogManager.
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class CreateSubcommand {
@@ -19,36 +22,79 @@ public final class CreateSubcommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
         return Commands.literal(name)
-                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_CREATE))
+                .requires(src -> src.getSender().hasPermission(CommandConfig.PERM_CREATE))
                 .executes(CreateSubcommand::execute);
     }
 
     private static int execute(CommandContext<CommandSourceStack> ctx) {
         if (!(ctx.getSource().getSender() instanceof Player player)) {
-            ctx.getSource().getSender().sendMessage(
-                    net.kyori.adventure.text.Component.text("Only players can create guilds.", net.kyori.adventure.text.format.NamedTextColor.RED));
+            GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+            if (plugin != null) {
+                plugin.getMessages().send(ctx.getSource().getSender(), "player-only");
+            }
             return 0;
         }
-        // DialogManager and GuildService are accessed via plugin instance stored in a static holder
-        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
-        if (plugin == null) return 0;
-
-        plugin.getDialogManager().openGuildCreateDialog(player, names -> {
-            String name = names[0];
-            String shortname = names[1];
-            plugin.getScheduler().runAsync(() ->
-                    plugin.getGuildService().createGuild(player.getUniqueId(), name, shortname)
-                            .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
-                                switch (result) {
-                                    case ActionResult.Success s ->
-                                            player.sendMessage(plugin.getMessages().prefixed("guild-created",
-                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("guild", name)));
-                                    case ActionResult.Failure f ->
-                                            player.sendMessage(plugin.getMessages().prefixed(f.reason()));
-                                }
-                            }))
-            );
-        });
+        openCreateFlow(player);
         return 1;
+    }
+
+    /** Shared entry point used by the command and the hub GUI create button. */
+    public static void openCreateFlow(Player player) {
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        if (plugin == null) return;
+
+        plugin.getScheduler().runAsync(() ->
+                plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenAccept(opt ->
+                        plugin.getScheduler().runForEntity(player, () -> {
+                            if (opt.isPresent()) {
+                                plugin.getMessages().send(player, "already-in-guild");
+                                return;
+                            }
+                            CreateEligibility.Status live = CreateEligibility.evaluate(player, false);
+                            if (!live.canCreate()) {
+                                String key = switch (live) {
+                                    case NO_PERMISSION -> "guild-creation-no-permission";
+                                    case INSUFFICIENT_FUNDS -> "guild-creation-insufficient-funds";
+                                    case MISSING_ITEMS -> "guild-creation-missing-items";
+                                    default -> "unknown-error";
+                                };
+                                plugin.getMessages().send(player, key, CreateEligibility.costResolver(player));
+                                return;
+                            }
+
+                            if (plugin.getConfigManager().isCreationMoneyEnabled()) {
+                                double cost = plugin.getConfigManager().getCreationMoneyCost();
+                                if (cost > 0) {
+                                    GuildServiceImpl service = (GuildServiceImpl) plugin.getGuildService();
+                                    plugin.getMessages().send(player, "guild-creation-cost",
+                                            Placeholder.unparsed("cost", service.economy().format(cost)));
+                                }
+                            }
+
+                            plugin.getDialogManager().openGuildCreateDialog(player, names -> {
+                                String name = names[0];
+                                String shortname = names[1];
+                                plugin.getScheduler().runAsync(() ->
+                                        plugin.getGuildService().createGuild(player.getUniqueId(), name, shortname)
+                                                .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
+                                                    switch (result) {
+                                                        case ActionResult.Success s ->
+                                                                plugin.getMessages().send(player, "guild-created",
+                                                                        Placeholder.unparsed("guild", name));
+                                                        case ActionResult.Failure f ->
+                                                                plugin.getMessages().send(player, f.reason(),
+                                                                        Placeholder.unparsed("cost",
+                                                                                ((GuildServiceImpl) plugin.getGuildService())
+                                                                                        .economy()
+                                                                                        .format(plugin.getConfigManager()
+                                                                                                .getCreationMoneyCost())),
+                                                                        Placeholder.unparsed("guild", name));
+                                                    }
+                                                }))
+                                );
+                            });
+                        })
+                )
+        );
     }
 }

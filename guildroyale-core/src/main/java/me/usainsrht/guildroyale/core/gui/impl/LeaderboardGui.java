@@ -3,12 +3,13 @@ package me.usainsrht.guildroyale.core.gui.impl;
 import me.usainsrht.guildroyale.api.domain.Guild;
 import me.usainsrht.guildroyale.api.service.LeaderboardService;
 import me.usainsrht.guildroyale.core.adapter.ItemStackAdapter;
+import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.gui.AbstractGui;
+import me.usainsrht.guildroyale.core.gui.GuiItems;
 import me.usainsrht.guildroyale.core.gui.GuiManager;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Material;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
@@ -21,63 +22,92 @@ import java.util.List;
  */
 public final class LeaderboardGui extends AbstractGui {
 
-    private static final int PAGE_SIZE = 36;
-
     private final GuiManager guiManager;
     private final LeaderboardService leaderboardService;
     private final int page;
+    private final int pageSize;
+    private final int previousSlot;
+    private final int nextSlot;
+    private final int closeSlot;
     private List<Guild> guilds = List.of();
 
     public LeaderboardGui(GuiManager guiManager, LeaderboardService leaderboardService, int page) {
-        super(54, "Guild Leaderboard — Page " + (page + 1));
+        super(size(), Component.empty());
         this.guiManager = guiManager;
         this.leaderboardService = leaderboardService;
-        this.page = page;
+        this.page = Math.max(0, page);
+
+        GuiConfig gui = GuiItems.config();
+        this.pageSize = gui != null ? gui.pageSize("leaderboard.page-size", 36) : 36;
+        this.previousSlot = gui != null ? gui.slot("leaderboard.slots.previous", 45) : 45;
+        this.nextSlot = gui != null ? gui.slot("leaderboard.slots.next", 53) : 53;
+        this.closeSlot = gui != null ? gui.slot("leaderboard.slots.close", 49) : 49;
+    }
+
+    private static int size() {
+        GuiConfig gui = GuiItems.config();
+        return gui != null ? gui.size("leaderboard.size", 54) : 54;
     }
 
     /** Sets the guild list before building. Call before {@link #open(Player)}. */
     public void setGuilds(List<Guild> guilds) {
-        this.guilds = guilds;
+        this.guilds = guilds != null ? guilds : List.of();
+    }
+
+    @Override
+    public void open(Player player) {
+        int maxPage = Math.max(1, (int) Math.ceil(Math.max(guilds.size(), 1) / (double) pageSize));
+        GuiConfig gui = GuiItems.config();
+        Component resolved = gui != null
+                ? gui.title("leaderboard.title",
+                        Placeholder.unparsed("page", String.valueOf(page + 1)),
+                        Placeholder.unparsed("max_page", String.valueOf(maxPage)))
+                : Component.text("Guild Leaderboard");
+        this.inventory = Bukkit.createInventory(this, size, resolved);
+        build();
+        player.openInventory(inventory);
     }
 
     @Override
     protected void build() {
-        for (int i = 0; i < PAGE_SIZE && i < guilds.size(); i++) {
+        for (int i = 0; i < pageSize && i < guilds.size(); i++) {
             Guild guild = guilds.get(i);
-            int rank = page * PAGE_SIZE + i + 1;
+            int rank = page * pageSize + i + 1;
             ItemStack icon = ItemStackAdapter.fromSerializable(guild.getIcon());
-            if (icon.getType().isAir()) icon = new ItemStack(Material.GOLDEN_HELMET);
-            ItemMeta meta = icon.getItemMeta();
-            meta.displayName(Component.text("#" + rank + " " + guild.getName(), NamedTextColor.GOLD)
-                    .decoration(TextDecoration.ITALIC, false));
-            meta.lore(List.of(
-                    Component.text("§7[" + guild.getShortname() + "]").decoration(TextDecoration.ITALIC, false),
-                    Component.text("§7Level: §f" + guild.getLevel()).decoration(TextDecoration.ITALIC, false),
-                    Component.text("§7XP: §f" + guild.getXp()).decoration(TextDecoration.ITALIC, false),
-                    Component.text("§7Members: §f" + guild.getMemberCount()).decoration(TextDecoration.ITALIC, false)
-            ));
-            icon.setItemMeta(meta);
+            if (icon.getType().isAir()) {
+                icon = GuiItems.get("leaderboard-entry",
+                        Placeholder.unparsed("rank", String.valueOf(rank)),
+                        Placeholder.unparsed("guild", guild.getName()),
+                        Placeholder.unparsed("shortname", guild.getShortname()),
+                        Placeholder.unparsed("level", String.valueOf(guild.getLevel())),
+                        Placeholder.unparsed("xp", String.valueOf(guild.getXp())),
+                        Placeholder.unparsed("members", String.valueOf(guild.getMemberCount())));
+            } else {
+                ItemStack template = GuiItems.get("leaderboard-entry",
+                        Placeholder.unparsed("rank", String.valueOf(rank)),
+                        Placeholder.unparsed("guild", guild.getName()),
+                        Placeholder.unparsed("shortname", guild.getShortname()),
+                        Placeholder.unparsed("level", String.valueOf(guild.getLevel())),
+                        Placeholder.unparsed("xp", String.valueOf(guild.getXp())),
+                        Placeholder.unparsed("members", String.valueOf(guild.getMemberCount())));
+                ItemMeta meta = template.getItemMeta();
+                if (meta != null) {
+                    icon.setItemMeta(meta);
+                }
+            }
             setSlot(i, icon);
         }
 
-        if (page > 0) setSlot(45, makeNav(Material.ARROW, "« Previous Page"));
-        if ((page + 1) * PAGE_SIZE < guilds.size()) setSlot(53, makeNav(Material.ARROW, "Next Page »"));
-        setSlot(49, makeNav(Material.BARRIER, "Close"));
+        if (page > 0) setSlot(previousSlot, GuiItems.get("gui-previous"));
+        if ((page + 1) * pageSize < guilds.size()) setSlot(nextSlot, GuiItems.get("gui-next"));
+        setSlot(closeSlot, GuiItems.get("gui-close"));
     }
 
     @Override
     public boolean onClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return true;
         int slot = event.getRawSlot();
-        if (slot == 49) player.closeInventory();
+        if (slot == closeSlot) player.closeInventory();
         return true;
-    }
-
-    private static ItemStack makeNav(Material mat, String label) {
-        ItemStack item = new ItemStack(mat);
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(Component.text(label, NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
-        item.setItemMeta(meta);
-        return item;
     }
 }

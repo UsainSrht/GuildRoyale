@@ -188,6 +188,18 @@ public final class JsonGuildRepository implements GuildRepository {
             roles.add(ro);
         }
         obj.add("roles", roles);
+
+        JsonArray ownedBadges = new JsonArray();
+        g.getOwnedBadges().forEach(ownedBadges::add);
+        obj.add("ownedBadges", ownedBadges);
+        if (g.getActiveBadgeId() != null) {
+            obj.addProperty("activeBadgeId", g.getActiveBadgeId());
+        }
+
+        JsonObject storage = new JsonObject();
+        g.getStorage().forEach((slot, item) -> storage.add(String.valueOf(slot), serializeIcon(item)));
+        obj.add("storage", storage);
+
         return obj;
     }
 
@@ -230,7 +242,28 @@ public final class JsonGuildRepository implements GuildRepository {
             members.add(new GuildMember(pid, role, joinedAt, contribution));
         }
 
-        return new Guild(id, name, shortname, icon, level, xp, members, roles, createdAt);
+        Set<String> ownedBadges = new LinkedHashSet<>();
+        if (obj.has("ownedBadges")) {
+            for (JsonElement el : obj.getAsJsonArray("ownedBadges")) {
+                ownedBadges.add(el.getAsString());
+            }
+        }
+        String activeBadgeId = obj.has("activeBadgeId") && !obj.get("activeBadgeId").isJsonNull()
+                ? obj.get("activeBadgeId").getAsString() : null;
+
+        Map<Integer, SerializableItemStack> storage = new TreeMap<>();
+        if (obj.has("storage") && obj.get("storage").isJsonObject()) {
+            JsonObject storageObj = obj.getAsJsonObject("storage");
+            for (Map.Entry<String, JsonElement> entry : storageObj.entrySet()) {
+                try {
+                    int slot = Integer.parseInt(entry.getKey());
+                    storage.put(slot, deserializeIcon(entry.getValue().getAsJsonObject()));
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
+        return new Guild(id, name, shortname, icon, level, xp, members, roles, createdAt,
+                ownedBadges, activeBadgeId, storage);
     }
 
     private JsonObject serializeIcon(SerializableItemStack icon) {

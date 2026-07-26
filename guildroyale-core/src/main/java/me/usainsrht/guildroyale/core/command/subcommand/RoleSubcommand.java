@@ -9,88 +9,50 @@ import io.papermc.paper.command.brigadier.Commands;
 import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.command.CommandNodes;
+import me.usainsrht.guildroyale.core.config.CommandConfig;
 import org.bukkit.entity.Player;
 
 /**
- * {@code /guild role} subtree:
- * <ul>
- *   <li>{@code /guild role create <name>}</li>
- *   <li>{@code /guild role delete <index>}</li>
- *   <li>{@code /guild role rename <index> <name>}</li>
- *   <li>{@code /guild role setpermission <index> <permission> <true|false>}</li>
- *   <li>{@code /guild role seticon <index>}</li>
- * </ul>
+ * {@code /guild role} subtree with configurable child names/aliases.
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class RoleSubcommand {
 
     private RoleSubcommand() {}
 
-    public static LiteralArgumentBuilder<CommandSourceStack> node(String name, String mainCmd) {
-        return Commands.literal(name)
-                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_ROLE))
-                // Show sub-command list when /guild role is run alone
+    public static LiteralArgumentBuilder<CommandSourceStack> node(CommandConfig.Spec spec, String mainCmd) {
+        LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal(spec.name())
+                .requires(src -> src.getSender().hasPermission(CommandConfig.PERM_ROLE))
                 .executes(ctx -> {
-                    ctx.getSource().getSender().sendMessage(
-                            net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
-                                    "<red>Usage: <yellow>/" + mainCmd + " " + name
-                                    + " <create|delete|rename|setpermission>"));
+                    GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+                    if (plugin != null) {
+                        plugin.getMessages().send(ctx.getSource().getSender(), "role-usage",
+                                net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("cmd", mainCmd),
+                                net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("sub", spec.name()));
+                    }
                     return 0;
-                })
-                .then(Commands.literal("create")
-                        .executes(ctx -> {
-                            ctx.getSource().getSender().sendMessage(
-                                    net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
-                                            "<red>Usage: <yellow>/" + mainCmd + " " + name + " create <roleName>"));
-                            return 0;
-                        })
+                });
+
+        CommandNodes.attachChild(root, spec.child("create", "create"), child -> child
+                .then(Commands.argument("name", StringArgumentType.greedyString())
+                        .executes(ctx -> executeCreate(ctx, StringArgumentType.getString(ctx, "name")))));
+        CommandNodes.attachChild(root, spec.child("delete", "delete"), child -> child
+                .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                        .executes(ctx -> executeDelete(ctx, IntegerArgumentType.getInteger(ctx, "index")))));
+        CommandNodes.attachChild(root, spec.child("rename", "rename"), child -> child
+                .then(Commands.argument("index", IntegerArgumentType.integer(1))
                         .then(Commands.argument("name", StringArgumentType.greedyString())
-                                .executes(ctx -> executeCreate(ctx, StringArgumentType.getString(ctx, "name")))))
-                .then(Commands.literal("delete")
-                        .executes(ctx -> {
-                            ctx.getSource().getSender().sendMessage(
-                                    net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
-                                            "<red>Usage: <yellow>/" + mainCmd + " " + name + " delete <index>"));
-                            return 0;
-                        })
-                        .then(Commands.argument("index", IntegerArgumentType.integer(1))
-                                .executes(ctx -> executeDelete(ctx, IntegerArgumentType.getInteger(ctx, "index")))))
-                .then(Commands.literal("rename")
-                        .executes(ctx -> {
-                            ctx.getSource().getSender().sendMessage(
-                                    net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
-                                            "<red>Usage: <yellow>/" + mainCmd + " " + name + " rename <index> <newName>"));
-                            return 0;
-                        })
-                        .then(Commands.argument("index", IntegerArgumentType.integer(1))
-                                .executes(ctx -> {
-                                    ctx.getSource().getSender().sendMessage(
-                                            net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
-                                                    "<red>Usage: <yellow>/" + mainCmd + " " + name + " rename <index> <newName>"));
-                                    return 0;
-                                })
-                                .then(Commands.argument("name", StringArgumentType.greedyString())
-                                        .executes(ctx -> executeRename(ctx,
-                                                IntegerArgumentType.getInteger(ctx, "index"),
-                                                StringArgumentType.getString(ctx, "name"))))))
-                .then(Commands.literal("setpermission")
-                        .executes(ctx -> {
-                            ctx.getSource().getSender().sendMessage(
-                                    net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
-                                            "<red>Usage: <yellow>/" + mainCmd + " " + name + " setpermission <index> <permission>"));
-                            return 0;
-                        })
-                        .then(Commands.argument("index", IntegerArgumentType.integer(1))
-                                .executes(ctx -> {
-                                    ctx.getSource().getSender().sendMessage(
-                                            net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
-                                                    "<red>Usage: <yellow>/" + mainCmd + " " + name + " setpermission <index> <permission>"));
-                                    return 0;
-                                })
-                                .then(Commands.argument("permission", StringArgumentType.word())
-                                        .executes(ctx -> executeTogglePerm(ctx,
-                                                IntegerArgumentType.getInteger(ctx, "index"),
-                                                StringArgumentType.getString(ctx, "permission"))))));
+                                .executes(ctx -> executeRename(ctx,
+                                        IntegerArgumentType.getInteger(ctx, "index"),
+                                        StringArgumentType.getString(ctx, "name"))))));
+        CommandNodes.attachChild(root, spec.child("setpermission", "setpermission"), child -> child
+                .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                        .then(Commands.argument("permission", StringArgumentType.word())
+                                .executes(ctx -> executeTogglePerm(ctx,
+                                        IntegerArgumentType.getInteger(ctx, "index"),
+                                        StringArgumentType.getString(ctx, "permission"))))));
+        return root;
     }
 
     private static int executeCreate(CommandContext<CommandSourceStack> ctx, String name) {
@@ -105,10 +67,10 @@ public final class RoleSubcommand {
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s ->
-                                            player.sendMessage(plugin.getMessages().prefixed("role-created",
-                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", name)));
+                                            plugin.getMessages().send(player, "role-created",
+                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", name));
                                     case ActionResult.Failure f ->
-                                            player.sendMessage(plugin.getMessages().prefixed(f.reason()));
+                                            plugin.getMessages().send(player, f.reason());
                                 }
                             }));
                 })
@@ -128,10 +90,10 @@ public final class RoleSubcommand {
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s ->
-                                            player.sendMessage(plugin.getMessages().prefixed("role-deleted",
-                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", String.valueOf(index))));
+                                            plugin.getMessages().send(player, "role-deleted",
+                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", String.valueOf(index)));
                                     case ActionResult.Failure f ->
-                                            player.sendMessage(plugin.getMessages().prefixed(f.reason()));
+                                            plugin.getMessages().send(player, f.reason());
                                 }
                             }));
                 })
@@ -151,10 +113,10 @@ public final class RoleSubcommand {
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s ->
-                                            player.sendMessage(plugin.getMessages().prefixed("role-renamed",
-                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", name)));
+                                            plugin.getMessages().send(player, "role-renamed",
+                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", name));
                                     case ActionResult.Failure f ->
-                                            player.sendMessage(plugin.getMessages().prefixed(f.reason()));
+                                            plugin.getMessages().send(player, f.reason());
                                 }
                             }));
                 })
@@ -183,10 +145,10 @@ public final class RoleSubcommand {
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s ->
-                                            player.sendMessage(plugin.getMessages().prefixed("permission-toggled",
-                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", String.valueOf(index))));
+                                            plugin.getMessages().send(player, "permission-toggled",
+                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", String.valueOf(index)));
                                     case ActionResult.Failure f ->
-                                            player.sendMessage(plugin.getMessages().prefixed(f.reason()));
+                                            plugin.getMessages().send(player, f.reason());
                                 }
                             }));
                 })

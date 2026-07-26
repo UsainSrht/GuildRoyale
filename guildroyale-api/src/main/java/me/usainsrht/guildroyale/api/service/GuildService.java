@@ -4,6 +4,7 @@ import me.usainsrht.guildroyale.api.domain.Guild;
 import me.usainsrht.guildroyale.api.domain.SerializableItemStack;
 import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -47,6 +48,28 @@ public interface GuildService {
 
     /** Sets a new name. Requires {@link GuildPermissionKey#GUILD_SETTINGS}. */
     CompletableFuture<ActionResult> setName(UUID guildId, UUID requesterId, String name);
+
+    /** Buys a config-defined badge for the guild (player pays). */
+    CompletableFuture<ActionResult> buyBadge(UUID guildId, UUID requesterId, String badgeId);
+
+    /** Equips an owned badge as the guild's active badge. */
+    CompletableFuture<ActionResult> equipBadge(UUID guildId, UUID requesterId, String badgeId);
+
+    /** Admin: grant a badge to a guild. */
+    CompletableFuture<ActionResult> adminGrantBadge(UUID guildId, String badgeId);
+
+    /** Admin: revoke a badge from a guild. */
+    CompletableFuture<ActionResult> adminRevokeBadge(UUID guildId, String badgeId);
+
+    /** Persists guild storage chest contents. Requires {@link GuildPermissionKey#STORAGE_ACCESS}. */
+    CompletableFuture<ActionResult> saveStorage(UUID guildId, UUID requesterId,
+                                                Map<Integer, SerializableItemStack> contents);
+
+    /** Deposit player money into the guild bank. */
+    CompletableFuture<ActionResult> bankDeposit(UUID guildId, UUID requesterId, double amount);
+
+    /** Withdraw from the guild bank into the player's balance. */
+    CompletableFuture<ActionResult> bankWithdraw(UUID guildId, UUID requesterId, double amount);
 
     /**
      * Admin: force-set level, bypassing normal XP progression.

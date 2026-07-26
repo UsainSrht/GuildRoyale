@@ -5,10 +5,11 @@ import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.config.CommandConfig;
 import me.usainsrht.guildroyale.core.gui.impl.GuildInfoGui;
 import org.bukkit.entity.Player;
 
-/** {@code /guild info} — shows guild information. */
+/** {@code /guild info} — opens the guild info GUI. */
 @SuppressWarnings("UnstableApiUsage")
 public final class InfoSubcommand {
 
@@ -16,7 +17,7 @@ public final class InfoSubcommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
         return Commands.literal(name)
-                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_INFO))
+                .requires(src -> src.getSender().hasPermission(CommandConfig.PERM_INFO))
                 .executes(InfoSubcommand::execute);
     }
 
@@ -29,10 +30,9 @@ public final class InfoSubcommand {
                 plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenAccept(opt ->
                         plugin.getScheduler().runForEntity(player, () -> {
                             if (opt.isEmpty()) {
-                                player.sendMessage(plugin.getMessages().prefixed("not-in-guild"));
+                                plugin.getMessages().send(player, "not-in-guild");
                                 return;
                             }
-                            // Open info GUI
                             new GuildInfoGui(opt.get(), plugin.getGuiManager()).open(player);
                         })
                 )

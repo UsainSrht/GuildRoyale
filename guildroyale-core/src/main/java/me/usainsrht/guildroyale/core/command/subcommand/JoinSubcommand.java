@@ -7,10 +7,11 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.config.CommandConfig;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 
-/** {@code /guild join <guildName>} — accepts a pending invite. */
+/** {@code /guild join <guildName>} */
 @SuppressWarnings("UnstableApiUsage")
 public final class JoinSubcommand {
 
@@ -18,14 +19,14 @@ public final class JoinSubcommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> node(String name, String mainCmd) {
         return Commands.literal(name)
-                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_JOIN))
+                .requires(src -> src.getSender().hasPermission(CommandConfig.PERM_JOIN))
                 .executes(ctx -> {
                     ctx.getSource().getSender().sendMessage(
                             net.kyori.adventure.text.minimessage.MiniMessage.miniMessage()
                                     .deserialize("<red>Usage: <yellow>/" + mainCmd + " " + name + " <guildName>"));
                     return 0;
                 })
-                .then(Commands.argument("guild", StringArgumentType.greedyString())
+                .then(Commands.argument("guildName", StringArgumentType.greedyString())
                         .executes(JoinSubcommand::execute));
     }
 
@@ -33,24 +34,23 @@ public final class JoinSubcommand {
         if (!(ctx.getSource().getSender() instanceof Player player)) return 0;
         GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
         if (plugin == null) return 0;
-
-        String guildName = StringArgumentType.getString(ctx, "guild");
+        String guildName = StringArgumentType.getString(ctx, "guildName");
 
         plugin.getScheduler().runAsync(() ->
                 plugin.getGuildService().getGuildByName(guildName).thenCompose(opt -> {
                     if (opt.isEmpty()) {
                         plugin.getScheduler().runForEntity(player, () ->
-                                player.sendMessage(plugin.getMessages().prefixed("invalid-guild")));
+                                plugin.getMessages().send(player, "invalid-guild"));
                         return java.util.concurrent.CompletableFuture.completedFuture(null);
                     }
                     return plugin.getMemberService().join(opt.get().getId(), player.getUniqueId())
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s ->
-                                            player.sendMessage(plugin.getMessages().prefixed("member-joined-self",
-                                                    Placeholder.unparsed("guild", opt.get().getName())));
+                                            plugin.getMessages().send(player, "member-joined-self",
+                                                    Placeholder.unparsed("guild", opt.get().getName()));
                                     case ActionResult.Failure f ->
-                                            player.sendMessage(plugin.getMessages().prefixed(f.reason()));
+                                            plugin.getMessages().send(player, f.reason());
                                 }
                             }));
                 })

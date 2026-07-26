@@ -7,11 +7,12 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.config.CommandConfig;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-/** {@code /guild leader <player>} — transfer leadership. */
+/** {@code /guild leader <player>} */
 @SuppressWarnings("UnstableApiUsage")
 public final class LeaderSubcommand {
 
@@ -19,7 +20,7 @@ public final class LeaderSubcommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> node(String name, String mainCmd) {
         return Commands.literal(name)
-                .requires(src -> src.getSender().hasPermission(me.usainsrht.guildroyale.core.config.CommandConfig.PERM_LEADER))
+                .requires(src -> src.getSender().hasPermission(CommandConfig.PERM_LEADER))
                 .executes(ctx -> {
                     ctx.getSource().getSender().sendMessage(
                             net.kyori.adventure.text.minimessage.MiniMessage.miniMessage()
@@ -38,8 +39,8 @@ public final class LeaderSubcommand {
         String targetName = StringArgumentType.getString(ctx, "player");
         Player target = Bukkit.getPlayerExact(targetName);
         if (target == null) {
-            player.sendMessage(plugin.getMessages().prefixed("player-not-found",
-                    Placeholder.unparsed("player", targetName)));
+            plugin.getMessages().send(player, "player-not-found",
+                    Placeholder.unparsed("player", targetName));
             return 0;
         }
 
@@ -47,7 +48,7 @@ public final class LeaderSubcommand {
                 plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenCompose(opt -> {
                     if (opt.isEmpty()) {
                         plugin.getScheduler().runForEntity(player, () ->
-                                player.sendMessage(plugin.getMessages().prefixed("not-in-guild")));
+                                plugin.getMessages().send(player, "not-in-guild"));
                         return java.util.concurrent.CompletableFuture.completedFuture(null);
                     }
                     return plugin.getMemberService().transferLeader(
@@ -55,15 +56,15 @@ public final class LeaderSubcommand {
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s -> {
-                                        player.sendMessage(plugin.getMessages().prefixed("leader-transferred",
+                                        plugin.getMessages().send(player, "leader-transferred",
                                                 Placeholder.unparsed("guild", opt.get().getName()),
-                                                Placeholder.unparsed("player", targetName)));
+                                                Placeholder.unparsed("player", targetName));
                                         plugin.getScheduler().runForEntity(target, () ->
-                                                target.sendMessage(plugin.getMessages().prefixed("leader-transferred-self",
-                                                        Placeholder.unparsed("guild", opt.get().getName()))));
+                                                plugin.getMessages().send(target, "leader-transferred-self",
+                                                        Placeholder.unparsed("guild", opt.get().getName())));
                                     }
                                     case ActionResult.Failure f ->
-                                            player.sendMessage(plugin.getMessages().prefixed(f.reason()));
+                                            plugin.getMessages().send(player, f.reason());
                                 }
                             }));
                 })

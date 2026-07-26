@@ -18,19 +18,43 @@ public final class Guild {
     private final List<GuildMember> members;
     private final List<GuildRole> roles;
     private final Instant createdAt;
+    private final Set<String> ownedBadges;
+    private String activeBadgeId;
+    private final Map<Integer, SerializableItemStack> storage;
 
     public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
                  int level, long xp, List<GuildMember> members, List<GuildRole> roles,
                  Instant createdAt) {
+        this(id, name, shortname, icon, level, xp, members, roles, createdAt,
+                Set.of(), null, Map.of());
+    }
+
+    public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
+                 int level, long xp, List<GuildMember> members, List<GuildRole> roles,
+                 Instant createdAt, Set<String> ownedBadges, String activeBadgeId,
+                 Map<Integer, SerializableItemStack> storage) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = Objects.requireNonNull(name, "name");
         this.shortname = Objects.requireNonNull(shortname, "shortname");
         this.icon = icon != null ? icon : SerializableItemStack.EMPTY;
-        this.level = Math.max(GuildLevel.MIN_LEVEL, Math.min(GuildLevel.MAX_LEVEL, level));
+        if (level < GuildLevel.MIN_LEVEL) {
+            throw new IllegalArgumentException("Level must be at least " + GuildLevel.MIN_LEVEL);
+        }
+        this.level = level;
         this.xp = Math.max(0, xp);
         this.members = new ArrayList<>(Objects.requireNonNull(members, "members"));
         this.roles = new ArrayList<>(Objects.requireNonNull(roles, "roles"));
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
+        this.ownedBadges = new LinkedHashSet<>(ownedBadges != null ? ownedBadges : Set.of());
+        this.activeBadgeId = activeBadgeId;
+        this.storage = new TreeMap<>();
+        if (storage != null) {
+            storage.forEach((slot, item) -> {
+                if (item != null && !item.isEmpty()) {
+                    this.storage.put(slot, item);
+                }
+            });
+        }
     }
 
     // ── Identity ────────────────────────────────────────────────────────────
@@ -50,8 +74,8 @@ public final class Guild {
 
     public int getLevel() { return level; }
     public void setLevel(int level) {
-        if (level < GuildLevel.MIN_LEVEL || level > GuildLevel.MAX_LEVEL) {
-            throw new IllegalArgumentException("Level must be between " + GuildLevel.MIN_LEVEL + " and " + GuildLevel.MAX_LEVEL);
+        if (level < GuildLevel.MIN_LEVEL) {
+            throw new IllegalArgumentException("Level must be at least " + GuildLevel.MIN_LEVEL);
         }
         this.level = level;
     }
@@ -61,6 +85,51 @@ public final class Guild {
     public void addXp(long amount) { this.xp = Math.max(0, this.xp + amount); }
 
     public Instant getCreatedAt() { return createdAt; }
+
+    // ── Badges ───────────────────────────────────────────────────────────────
+
+    public Set<String> getOwnedBadges() { return Collections.unmodifiableSet(ownedBadges); }
+
+    public boolean ownsBadge(String badgeId) {
+        return ownedBadges.contains(badgeId);
+    }
+
+    public void addBadge(String badgeId) {
+        ownedBadges.add(Objects.requireNonNull(badgeId));
+    }
+
+    public boolean removeBadge(String badgeId) {
+        boolean removed = ownedBadges.remove(badgeId);
+        if (removed && badgeId.equals(activeBadgeId)) {
+            activeBadgeId = null;
+        }
+        return removed;
+    }
+
+    public String getActiveBadgeId() { return activeBadgeId; }
+
+    public void setActiveBadgeId(String activeBadgeId) {
+        if (activeBadgeId != null && !ownedBadges.contains(activeBadgeId)) {
+            throw new IllegalArgumentException("Guild does not own badge: " + activeBadgeId);
+        }
+        this.activeBadgeId = activeBadgeId;
+    }
+
+    // ── Storage ──────────────────────────────────────────────────────────────
+
+    public Map<Integer, SerializableItemStack> getStorage() {
+        return Collections.unmodifiableMap(storage);
+    }
+
+    public void setStorageContents(Map<Integer, SerializableItemStack> contents) {
+        storage.clear();
+        if (contents == null) return;
+        contents.forEach((slot, item) -> {
+            if (item != null && !item.isEmpty()) {
+                storage.put(slot, item);
+            }
+        });
+    }
 
     // ── Members ──────────────────────────────────────────────────────────────
 
