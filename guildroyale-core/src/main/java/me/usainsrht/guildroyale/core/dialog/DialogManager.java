@@ -11,6 +11,7 @@ import io.papermc.paper.registry.data.dialog.input.DialogInput;
 import io.papermc.paper.registry.data.dialog.type.DialogType;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
+import me.usainsrht.guildroyale.core.feature.GuildFeature;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickCallback;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -19,6 +20,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.entity.Player;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -48,32 +50,41 @@ public final class DialogManager {
     }
 
     /**
-     * Opens a two-field dialog for guild name and shortname.
+     * Opens a dialog for guild creation.
      * {@code callback} receives {@code String[2]} = {name, shortname}.
+     * If shortname unlock level is > 1, shortname input field is omitted and second element is empty string.
      */
     public void openGuildCreateDialog(Player player, Consumer<String[]> callback) {
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        boolean askShortname = plugin == null || plugin.getConfigManager().getFeatureUnlockLevel(GuildFeature.SHORTNAME) <= 1;
+
+        Component bodyText = askShortname
+                ? text("dialogs.create.body", "<gray>Choose a <white>name</white> (3–32 chars) and a <white>shortname</white> (2–6 alphanumeric).")
+                : text("dialogs.create.body-no-shortname", "<gray>Choose a <white>name</white> (3–32 chars).");
+
+        List<DialogInput> inputs = new ArrayList<>();
+        inputs.add(DialogInput.text("guild_name", 200,
+                text("dialogs.create.name-label", "<yellow>Guild Name"), true, "", 32, null));
+        if (askShortname) {
+            inputs.add(DialogInput.text("guild_shortname", 200,
+                    text("dialogs.create.shortname-label", "<yellow>Shortname"), true, "", 6, null));
+        }
+
         DialogBase base = DialogBase.create(
                 text("dialogs.create.title", "<gold><bold>Create a Guild"),
                 null,
                 true,
                 false,
                 DialogBase.DialogAfterAction.CLOSE,
-                List.of(DialogBody.plainMessage(text(
-                        "dialogs.create.body",
-                        "<gray>Choose a <white>name</white> (3–32 chars) and a <white>shortname</white> (2–6 alphanumeric)."))),
-                List.of(
-                        DialogInput.text("guild_name", 200,
-                                text("dialogs.create.name-label", "<yellow>Guild Name"), true, "", 32, null),
-                        DialogInput.text("guild_shortname", 200,
-                                text("dialogs.create.shortname-label", "<yellow>Shortname"), true, "", 6, null)
-                )
+                List.of(DialogBody.plainMessage(bodyText)),
+                inputs
         );
 
         DialogAction action = DialogAction.customClick(
                 (DialogActionCallback) (response, audience) -> {
                     String name = textOrEmpty(response, "guild_name");
-                    String shortname = textOrEmpty(response, "guild_shortname");
-                    if (!name.isEmpty() && !shortname.isEmpty()) {
+                    String shortname = askShortname ? textOrEmpty(response, "guild_shortname") : "";
+                    if (!name.isEmpty() && (!askShortname || !shortname.isEmpty())) {
                         callback.accept(new String[]{name, shortname});
                     }
                 },

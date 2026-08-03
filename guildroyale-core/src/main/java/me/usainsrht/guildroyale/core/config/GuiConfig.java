@@ -65,7 +65,11 @@ public final class GuiConfig {
                     continue;
                 }
                 try {
-                    items.put(key.toLowerCase(Locale.ROOT), YamlItem.parse(section));
+                    ItemStack parsed = YamlItem.parse(section);
+                    if (section.getBoolean("hide-tooltip", false) || section.getBoolean("hide_tooltip", false)) {
+                        applyHideTooltip(parsed);
+                    }
+                    items.put(key.toLowerCase(Locale.ROOT), parsed);
                 } catch (YamlParseException ex) {
                     plugin.getLogger().log(Level.WARNING, "Failed to parse GUI item '" + key + "': " + ex.getMessage());
                 }
@@ -192,6 +196,15 @@ public final class GuiConfig {
             meta.lore(lore);
         }
         stack.setItemMeta(meta);
+    }
+
+    public static void applyHideTooltip(ItemStack stack) {
+        if (stack == null || stack.getType().isAir()) return;
+        ItemMeta meta = stack.getItemMeta();
+        if (meta != null) {
+            meta.setHideTooltip(true);
+            stack.setItemMeta(meta);
+        }
     }
 
     private static Component plain(Component component) {

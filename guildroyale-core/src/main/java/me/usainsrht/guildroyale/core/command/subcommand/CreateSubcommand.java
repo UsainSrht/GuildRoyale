@@ -4,13 +4,18 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import me.usainsrht.guildroyale.api.domain.Guild;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.config.CommandConfig;
 import me.usainsrht.guildroyale.core.gui.CreateEligibility;
+import me.usainsrht.guildroyale.core.gui.impl.GuildMainGui;
 import me.usainsrht.guildroyale.core.service.GuildServiceImpl;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+
+import java.util.concurrent.CompletableFuture;
 
 /**
  * {@code /guild create} — opens the guild creation dialog.
@@ -19,6 +24,8 @@ import org.bukkit.entity.Player;
 public final class CreateSubcommand {
 
     private CreateSubcommand() {}
+
+    private record CreateOutcome(ActionResult result, Guild guild) {}
 
     public static LiteralArgumentBuilder<CommandSourceStack> node(String name) {
         return Commands.literal(name)
@@ -76,11 +83,28 @@ public final class CreateSubcommand {
                                 String shortname = names[1];
                                 plugin.getScheduler().runAsync(() ->
                                         plugin.getGuildService().createGuild(player.getUniqueId(), name, shortname)
-                                                .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
-                                                    switch (result) {
-                                                        case ActionResult.Success s ->
-                                                                plugin.getMessages().send(player, "guild-created",
-                                                                        Placeholder.unparsed("guild", name));
+                                                .thenCompose(result -> {
+                                                    if (result instanceof ActionResult.Success) {
+                                                        return plugin.getGuildService().getGuildByMember(player.getUniqueId())
+                                                                .thenApply(optGuild -> new CreateOutcome(result, optGuild.orElse(null)));
+                                                    }
+                                                    return CompletableFuture.completedFuture(new CreateOutcome(result, null));
+                                                })
+                                                .thenAccept(outcome -> plugin.getScheduler().runForEntity(player, () -> {
+                                                    switch (outcome.result()) {
+                                                        case ActionResult.Success s -> {
+                                                            plugin.getMessages().send(player, "guild-created",
+                                                                    Placeholder.unparsed("guild", name));
+                                                            plugin.getMessages().send(Bukkit.getServer(), "guild-created-broadcast",
+                                                                    Placeholder.unparsed("guild", name),
+                                                                    Placeholder.unparsed("player", player.getName()));
+                                                            if (outcome.guild() != null) {
+                                                                var memberOpt = outcome.guild().getMember(player.getUniqueId());
+                                                                if (memberOpt.isPresent()) {
+                                                                    new GuildMainGui(outcome.guild(), memberOpt.get(), plugin.getGuiManager()).open(player);
+                                                                }
+                                                            }
+                                                        }
                                                         case ActionResult.Failure f ->
                                                                 plugin.getMessages().send(player, f.reason(),
                                                                         Placeholder.unparsed("cost",

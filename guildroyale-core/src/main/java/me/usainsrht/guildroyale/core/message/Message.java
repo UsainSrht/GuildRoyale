@@ -175,16 +175,25 @@ public final class Message {
                     if (sound == null) {
                         continue;
                     }
-                    float volume = number(map.get("volume"), 1f);
-                    float pitch = number(map.get("pitch"), 1f);
-                    out.add(new SoundEntry(String.valueOf(sound), volume, pitch));
+                    SoundEntry base = SoundEntry.of(String.valueOf(sound));
+                    float volume = map.containsKey("volume") ? number(map.get("volume"), base.volume()) : base.volume();
+                    float pitch = map.containsKey("pitch") ? number(map.get("pitch"), base.pitch()) : base.pitch();
+                    Sound.Source source = (map.containsKey("source") || map.containsKey("category"))
+                            ? parseSource(map.get("source") != null ? map.get("source") : map.get("category"))
+                            : base.source();
+                    out.add(new SoundEntry(base.sound(), volume, pitch, source));
                 } else if (entry instanceof ConfigurationSection sec) {
                     String sound = sec.getString("sound", sec.getString("name"));
                     if (sound == null) {
                         continue;
                     }
-                    out.add(new SoundEntry(sound, (float) sec.getDouble("volume", 1.0),
-                            (float) sec.getDouble("pitch", 1.0)));
+                    SoundEntry base = SoundEntry.of(sound);
+                    float volume = sec.contains("volume") ? (float) sec.getDouble("volume", base.volume()) : base.volume();
+                    float pitch = sec.contains("pitch") ? (float) sec.getDouble("pitch", base.pitch()) : base.pitch();
+                    Sound.Source source = (sec.contains("source") || sec.contains("category"))
+                            ? parseSource(sec.getString("source", sec.getString("category")))
+                            : base.source();
+                    out.add(new SoundEntry(base.sound(), volume, pitch, source));
                 }
             }
             return out.isEmpty() ? List.of() : List.copyOf(out);
@@ -193,12 +202,31 @@ public final class Message {
             // sound: { sound: x, volume: 1 }
             String sound = section.getString("sound", section.getString("name"));
             if (sound != null) {
-                return List.of(new SoundEntry(sound,
-                        (float) section.getDouble("volume", 1.0),
-                        (float) section.getDouble("pitch", 1.0)));
+                SoundEntry base = SoundEntry.of(sound);
+                float volume = section.contains("volume") ? (float) section.getDouble("volume", base.volume()) : base.volume();
+                float pitch = section.contains("pitch") ? (float) section.getDouble("pitch", base.pitch()) : base.pitch();
+                Sound.Source source = (section.contains("source") || section.contains("category"))
+                        ? parseSource(section.getString("source", section.getString("category")))
+                        : base.source();
+                return List.of(new SoundEntry(base.sound(), volume, pitch, source));
             }
         }
         return null;
+    }
+
+    private static Sound.Source parseSource(@Nullable Object raw) {
+        if (raw == null) {
+            return Sound.Source.MASTER;
+        }
+        String str = String.valueOf(raw).trim().toUpperCase(Locale.ROOT);
+        if (str.isEmpty()) {
+            return Sound.Source.MASTER;
+        }
+        try {
+            return Sound.Source.valueOf(str);
+        } catch (IllegalArgumentException ignored) {
+            return Sound.Source.MASTER;
+        }
     }
 
     private static @Nullable TitleEntry parseTitle(@Nullable Object raw) {
@@ -272,6 +300,18 @@ public final class Message {
         return chat == null ? null : Collections.unmodifiableList(chat);
     }
 
+    public @Nullable List<SoundEntry> sounds() {
+        return sounds == null ? null : Collections.unmodifiableList(sounds);
+    }
+
+    public @Nullable String actionbar() {
+        return actionbar;
+    }
+
+    public @Nullable TitleEntry title() {
+        return title;
+    }
+
     /**
      * Sends this message to {@code audience}.
      *
@@ -316,7 +356,8 @@ public final class Message {
                     Key key = rawSound.contains(":")
                             ? Key.key(rawSound)
                             : Key.key("minecraft", rawSound.replace('_', '.'));
-                    audience.playSound(Sound.sound(key, Sound.Source.MASTER, entry.volume(), entry.pitch()));
+                    Sound.Source source = entry.source() != null ? entry.source() : Sound.Source.MASTER;
+                    audience.playSound(Sound.sound(key, source, entry.volume(), entry.pitch()));
                 } catch (Exception ignored) {
                     // Invalid sound keys are skipped so bad config never breaks feedback
                 }
@@ -335,9 +376,21 @@ public final class Message {
         return MM.deserialize(chat.getFirst(), resolver);
     }
 
-    public record SoundEntry(String sound, float volume, float pitch) {
-        public static SoundEntry of(String sound) {
-            return new SoundEntry(sound, 1f, 1f);
+    public record SoundEntry(String sound, float volume, float pitch, Sound.Source source) {
+        public SoundEntry(String sound, float volume, float pitch) {
+            this(sound, volume, pitch, Sound.Source.MASTER);
+        }
+
+        public static SoundEntry of(String s) {
+            if (s == null || s.isBlank()) {
+                return new SoundEntry("", 1f, 1f, Sound.Source.MASTER);
+            }
+            String[] parts = s.split(",");
+            String sound = parts[0].trim();
+            float volume = parts.length > 1 ? number(parts[1].trim(), 1f) : 1f;
+            float pitch = parts.length > 2 ? number(parts[2].trim(), 1f) : 1f;
+            Sound.Source source = parts.length > 3 ? parseSource(parts[3].trim()) : Sound.Source.MASTER;
+            return new SoundEntry(sound, volume, pitch, source);
         }
     }
 

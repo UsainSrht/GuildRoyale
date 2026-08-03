@@ -13,7 +13,8 @@ import java.util.logging.Logger;
  * Optional VaultUnlocked economy wrapper. When the economy API is not present
  * all operations succeed silently (cost = free).
  *
- * <p>Obtain an instance via {@link #load(Logger, String)}.
+ * <p>
+ * Obtain an instance via {@link #load(Logger, String)}.
  */
 public final class EconomyProvider {
 
@@ -27,16 +28,16 @@ public final class EconomyProvider {
 
     /**
      * Attempts to hook into VaultUnlocked. Returns an instance with
-     * {@code economy == null} if VaultUnlocked or its economy provider is unavailable.
+     * {@code economy == null} if VaultUnlocked or its economy provider is
+     * unavailable.
      */
     public static EconomyProvider load(Logger logger, String pluginName) {
-        if (Bukkit.getPluginManager().getPlugin("VaultUnlocked") == null
+        if (Bukkit.getPluginManager().getPlugin("Vault") == null
                 && Bukkit.getPluginManager().getPlugin("Vault") == null) {
             logger.info("VaultUnlocked/Vault not found — economy features disabled.");
             return new EconomyProvider(null, pluginName);
         }
-        RegisteredServiceProvider<Economy> rsp =
-                Bukkit.getServicesManager().getRegistration(Economy.class);
+        RegisteredServiceProvider<Economy> rsp = Bukkit.getServicesManager().getRegistration(Economy.class);
         if (rsp == null) {
             logger.warning("No VaultUnlocked economy provider is registered.");
             return new EconomyProvider(null, pluginName);
@@ -45,13 +46,17 @@ public final class EconomyProvider {
         return new EconomyProvider(rsp.getProvider(), pluginName);
     }
 
-    public boolean isAvailable() { return economy != null; }
+    public boolean isAvailable() {
+        return economy != null;
+    }
 
     /**
-     * Returns {@code true} if the account has at least {@code amount}, or economy is absent.
+     * Returns {@code true} if the account has at least {@code amount}, or economy
+     * is absent.
      */
     public boolean has(UUID accountId, double amount) {
-        if (economy == null || amount <= 0) return true;
+        if (economy == null || amount <= 0)
+            return true;
         return economy.has(pluginName, accountId, BigDecimal.valueOf(amount));
     }
 
@@ -60,7 +65,8 @@ public final class EconomyProvider {
      * Returns {@code true} on success or if economy is absent / amount is zero.
      */
     public boolean withdraw(UUID accountId, double amount) {
-        if (economy == null || amount <= 0) return true;
+        if (economy == null || amount <= 0)
+            return true;
         EconomyResponse resp = economy.withdraw(pluginName, accountId, BigDecimal.valueOf(amount));
         return resp.transactionSuccess();
     }
@@ -70,14 +76,16 @@ public final class EconomyProvider {
      * Returns {@code true} on success or if economy is absent / amount is zero.
      */
     public boolean deposit(UUID accountId, double amount) {
-        if (economy == null || amount <= 0) return true;
+        if (economy == null || amount <= 0)
+            return true;
         EconomyResponse resp = economy.deposit(pluginName, accountId, BigDecimal.valueOf(amount));
         return resp.transactionSuccess();
     }
 
     /** Returns the account balance, or {@code 0} if economy is absent. */
     public double getBalance(UUID accountId) {
-        if (economy == null) return 0;
+        if (economy == null)
+            return 0;
         return economy.balance(pluginName, accountId).doubleValue();
     }
 
@@ -86,14 +94,17 @@ public final class EconomyProvider {
      * No-op when economy is absent.
      */
     public boolean createGuildAccount(UUID guildId, String name) {
-        if (economy == null) return true;
-        if (economy.hasAccount(guildId)) return true;
+        if (economy == null)
+            return true;
+        if (economy.hasAccount(guildId))
+            return true;
         return economy.createAccount(guildId, name, false);
     }
 
     /** Returns a formatted string for the given amount (e.g. "$500.00"). */
     public String format(double amount) {
-        if (economy == null) return String.valueOf(amount);
+        if (economy == null)
+            return String.valueOf(amount);
         return economy.format(pluginName, BigDecimal.valueOf(amount));
     }
 }

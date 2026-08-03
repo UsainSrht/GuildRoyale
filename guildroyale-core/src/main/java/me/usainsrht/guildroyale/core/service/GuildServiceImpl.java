@@ -60,7 +60,8 @@ public final class GuildServiceImpl implements GuildService {
         if (!NAME_PATTERN.matcher(name).matches()) {
             return done(ActionResult.failure("guild-name-invalid"));
         }
-        if (!SHORTNAME_PATTERN.matcher(shortname).matches()) {
+        boolean hasShortnameInput = shortname != null && !shortname.isBlank();
+        if (hasShortnameInput && !SHORTNAME_PATTERN.matcher(shortname).matches()) {
             return done(ActionResult.failure("guild-shortname-invalid"));
         }
 
@@ -84,9 +85,15 @@ public final class GuildServiceImpl implements GuildService {
             return repo.existsByName(name).thenCompose(nameTaken -> {
                 if (nameTaken) return done(ActionResult.failure("guild-name-taken"));
                 return repo.findAll().thenCompose(all -> {
-                    boolean shortnameUsed = all.stream()
-                            .anyMatch(g -> g.getShortname().equalsIgnoreCase(shortname));
-                    if (shortnameUsed) return done(ActionResult.failure("guild-shortname-taken"));
+                    String finalShortname;
+                    if (hasShortnameInput) {
+                        boolean shortnameUsed = all.stream()
+                                .anyMatch(g -> g.getShortname().equalsIgnoreCase(shortname));
+                        if (shortnameUsed) return done(ActionResult.failure("guild-shortname-taken"));
+                        finalShortname = shortname;
+                    } else {
+                        finalShortname = generateDefaultShortname(name, all);
+                    }
 
                     return consumeCreationItems(online).thenCompose(itemsOk -> {
                         if (!itemsOk) return done(ActionResult.failure("guild-creation-missing-items"));
@@ -104,7 +111,7 @@ public final class GuildServiceImpl implements GuildService {
                         GuildRole memberRole = GuildRole.createMember();
 
                         GuildMember owner = new GuildMember(ownerPlayerId, leaderRole, now, 0L);
-                        Guild guild = new Guild(guildId, name, shortname, SerializableItemStack.EMPTY,
+                        Guild guild = new Guild(guildId, name, finalShortname, SerializableItemStack.EMPTY,
                                 GuildLevel.MIN_LEVEL, 0L,
                                 List.of(owner),
                                 List.of(leaderRole, coLeaderRole, helperRole, memberRole),
@@ -120,6 +127,39 @@ public final class GuildServiceImpl implements GuildService {
                 });
             });
         });
+    }
+
+    private String generateDefaultShortname(String name, List<Guild> allGuilds) {
+        String clean = name.replaceAll("[^a-zA-Z0-9]", "");
+        String base;
+        if (clean.length() < 2) {
+            base = "G" + clean;
+            while (base.length() < 2) base += "X";
+        } else if (clean.length() > 6) {
+            base = clean.substring(0, 6);
+        } else {
+            base = clean;
+        }
+
+        Set<String> existing = new HashSet<>();
+        for (Guild g : allGuilds) {
+            existing.add(g.getShortname().toLowerCase(Locale.ROOT));
+        }
+
+        if (!existing.contains(base.toLowerCase(Locale.ROOT)) && SHORTNAME_PATTERN.matcher(base).matches()) {
+            return base;
+        }
+
+        for (int i = 1; i <= 9999; i++) {
+            String suffix = String.valueOf(i);
+            int maxBaseLen = 6 - suffix.length();
+            String prefix = base.length() > maxBaseLen ? base.substring(0, maxBaseLen) : base;
+            String candidate = prefix + suffix;
+            if (!existing.contains(candidate.toLowerCase(Locale.ROOT)) && SHORTNAME_PATTERN.matcher(candidate).matches()) {
+                return candidate;
+            }
+        }
+        return UUID.randomUUID().toString().replaceAll("[^a-zA-Z0-9]", "").substring(0, 6);
     }
 
     private CompletableFuture<Boolean> consumeCreationItems(Player player) {

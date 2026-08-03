@@ -5,6 +5,10 @@ import me.usainsrht.guildroyale.api.service.LeaderboardService;
 import me.usainsrht.guildroyale.api.service.MemberService;
 import me.usainsrht.guildroyale.api.service.RoleService;
 import me.usainsrht.guildroyale.api.storage.GuildRepository;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import me.usainsrht.guildroyale.core.command.GuildAdminCommandRegistrar;
+import me.usainsrht.guildroyale.core.command.GuildCommandRegistrar;
+import me.usainsrht.guildroyale.core.config.CommandConfig;
 import me.usainsrht.guildroyale.core.config.ConfigManager;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.config.MessagesManager;
@@ -24,6 +28,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 /**
  * GuildRoyale main plugin class.
  */
+@SuppressWarnings("UnstableApiUsage")
 public final class GuildRoyalePlugin extends JavaPlugin {
 
     private static GuildRoyalePlugin instance;
@@ -56,13 +61,21 @@ public final class GuildRoyalePlugin extends JavaPlugin {
         logWriter = new GuildLogWriter(this);
 
         repository = StorageFactory.create(this, configManager, scheduler);
-        repository.init().whenComplete((v, ex) -> {
-            if (ex != null) {
-                getSLF4JLogger().error("Failed to initialise storage backend", ex);
-                getServer().getPluginManager().disablePlugin(this);
-                return;
-            }
+        try {
+            repository.init().join();
             getSLF4JLogger().info("Storage backend initialised: {}", configManager.getStorageType());
+        } catch (Exception ex) {
+            getSLF4JLogger().error("Failed to initialise storage backend", ex);
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        CommandConfig cmdCfg = CommandConfig.load(
+                getDataFolder().toPath(),
+                getClassLoader());
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            GuildCommandRegistrar.register(event.registrar(), cmdCfg);
+            GuildAdminCommandRegistrar.register(event.registrar(), cmdCfg);
         });
 
         EconomyProvider economy = EconomyProvider.load(getLogger(), getName());

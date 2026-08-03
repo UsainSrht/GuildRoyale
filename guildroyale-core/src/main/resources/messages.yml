@@ -41,6 +41,8 @@ guild-created:
     stay: 50
     fade-out: 15
 
+guild-created-broadcast: "<gold><player></gold> <yellow>has created the guild <gold><guild></gold>!"
+
 guild-name-taken: "<red>A guild with that name already exists."
 guild-name-invalid: "<red>Guild name must be 3–32 characters and contain only letters, numbers, spaces, or hyphens."
 guild-shortname-invalid: "<red>Shortname must be 2–6 characters and contain only letters or numbers."

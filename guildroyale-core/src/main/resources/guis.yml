@@ -26,6 +26,7 @@ dialogs:
   create:
     title: "<gold><bold>Create a Guild"
     body: "<gray>Choose a <white>name</white> (3–32 chars) and a <white>shortname</white> (2–6 alphanumeric)."
+    body-no-shortname: "<gray>Choose a <white>name</white> (3–32 chars)."
     name-label: "<yellow>Guild Name"
     shortname-label: "<yellow>Shortname"
     submit: "<green>Create Guild"
@@ -64,16 +65,17 @@ info:
 
 members:
   size: 54
-  title: "<gold>Members <dark_gray>— <yellow><guild> <dark_gray>(Page <page>/<max_page>)"
-  page-size: 36
+  title: "<gradient:#f0c14b:#ffe08a><bold><shadow:#000000FF>Members — <guild> (Page <page>/<max_page>)</shadow></bold></gradient>"
   slots:
     previous: 45
+    action2: 47
+    back: 49
+    action1: 51
     next: 53
-    close: 49
 
 member-action:
   size: 27
-  title: "<gold>Member: <yellow><player>"
+  title: "<gradient:#f0c14b:#ffe08a><bold><shadow:#000000FF>Member: <player></shadow></bold></gradient>"
   slots:
     head: 4
     kick: 11
@@ -83,15 +85,18 @@ member-action:
 
 roles:
   size: 54
-  title: "<gold>Roles <dark_gray>— <yellow><guild>"
-  content-slots: 45
+  title: "<gradient:#f0c14b:#ffe08a><bold><shadow:#000000FF>Roles — <guild></shadow></bold></gradient>"
   slots:
-    create: 49
-    back: 45
+    previous: 45
+    action2: 47
+    back: 49
+    action1: 51
+    create: 51
+    next: 53
 
 role-editor:
   size: 54
-  title: "<gold>Edit Role: <yellow><role>"
+  title: "<gradient:#f0c14b:#ffe08a><bold><shadow:#000000FF>Edit Role: <role></shadow></bold></gradient>"
   slots:
     info: 4
     permissions-start: 18
@@ -106,12 +111,13 @@ role-editor:
 
 leaderboard:
   size: 54
-  title: "<gold>Guild Leaderboard <dark_gray>— Page <page>/<max_page>"
-  page-size: 36
+  title: "<gradient:#f0c14b:#ffe08a><bold><shadow:#000000FF>Guild Leaderboard — Page <page>/<max_page></shadow></bold></gradient>"
   slots:
     previous: 45
+    action2: 47
+    back: 49
+    action1: 51
     next: 53
-    close: 49
 
 storage:
   title: "<gold>Guild Storage <dark_gray>— <yellow><guild>"
@@ -240,10 +246,18 @@ items:
       - "<yellow>/guild disband"
 
   # ── Shared nav ─────────────────────────────────────────────────
+  gui-border-filler:
+    material: black_stained_glass_pane
+    name: " "
+    hide-tooltip: true
+
+  gui-inner-filler:
+    material: air
+
   gui-filler:
-    material: gray_stained_glass_pane
-    name: "<reset>"
-    lore: []
+    material: black_stained_glass_pane
+    name: " "
+    hide-tooltip: true
 
   gui-back:
     material: arrow

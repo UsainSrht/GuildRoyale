@@ -60,4 +60,12 @@ public final class GuiItems {
     public static ItemStack filler() {
         return get("gui-filler");
     }
+
+    public static ItemStack borderFiller() {
+        return get("gui-border-filler");
+    }
+
+    public static ItemStack innerFiller() {
+        return get("gui-inner-filler");
+    }
 }
