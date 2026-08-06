@@ -7,6 +7,7 @@ import me.usainsrht.guildroyale.core.adapter.ItemStackAdapter;
 import me.usainsrht.guildroyale.core.command.subcommand.BankSubcommand;
 import me.usainsrht.guildroyale.core.command.subcommand.StorageSubcommand;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
+import me.usainsrht.guildroyale.core.feature.GuildFeature;
 import me.usainsrht.guildroyale.core.gui.AbstractGui;
 import me.usainsrht.guildroyale.core.gui.GuiItems;
 import me.usainsrht.guildroyale.core.gui.GuiManager;
@@ -75,8 +76,10 @@ public final class GuildMainGui extends AbstractGui {
         setSlot(membersSlot, GuiItems.get("main-members"));
         setSlot(rolesSlot, GuiItems.get("main-roles"));
         setSlot(leaderboardSlot, GuiItems.get("main-leaderboard"));
-        setSlot(storageSlot, GuiItems.get("main-storage"));
-        setSlot(bankSlot, GuiItems.get("main-bank"));
+        setSlot(storageSlot, GuiItems.featureItem(guild, GuildFeature.STORAGE,
+                "main-storage", "main-storage-locked"));
+        setSlot(bankSlot, GuiItems.featureItem(guild, GuildFeature.BANK,
+                "main-bank", "main-bank-locked"));
         setSlot(settingsSlot, GuiItems.get("main-settings"));
     }
 
@@ -112,10 +115,15 @@ public final class GuildMainGui extends AbstractGui {
                     )
             );
         } else if (slot == storageSlot) {
+            if (!GuiItems.isFeatureUnlocked(guild, GuildFeature.STORAGE)) {
+                return true;
+            }
             player.closeInventory();
             StorageSubcommand.openStorage(player);
         } else if (slot == bankSlot) {
-            player.closeInventory();
+            if (!GuiItems.isFeatureUnlocked(guild, GuildFeature.BANK)) {
+                return true;
+            }
             BankSubcommand.showBalance(player);
         } else if (slot == settingsSlot) {
             new GuildSettingsGui(guild, viewer, guiManager)

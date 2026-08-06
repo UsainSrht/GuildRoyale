@@ -57,7 +57,8 @@ public final class GuildSettingsGui extends AbstractGui {
     protected void build() {
         fillBorder(GuiItems.filler());
 
-        setSlot(shortnameSlot, GuiItems.get("settings-shortname"));
+        setSlot(shortnameSlot, GuiItems.featureItem(guild, GuildFeature.SHORTNAME,
+                "settings-shortname", "settings-shortname-locked"));
         setSlot(iconSlot, GuiItems.get("settings-icon"));
         setSlot(disbandSlot, GuiItems.get("settings-disband"));
         setSlot(backSlot, navBackItem());
@@ -85,14 +86,11 @@ public final class GuildSettingsGui extends AbstractGui {
 
     private void openShortname(Player player, GuildRoyalePlugin plugin) {
         if (plugin == null) return;
-        GuildServiceImpl service = (GuildServiceImpl) plugin.getGuildService();
-        GuildFeature feature = GuildFeature.SHORTNAME;
-        if (!service.featureGate().isUnlocked(guild, feature)) {
-            plugin.getMessages().send(player, "feature-locked",
-                    Placeholder.unparsed("feature", "shortname"),
-                    Placeholder.unparsed("level", String.valueOf(service.featureGate().unlockLevel(feature))));
+        if (!GuiItems.isFeatureUnlocked(guild, GuildFeature.SHORTNAME)) {
             return;
         }
+        GuildServiceImpl service = (GuildServiceImpl) plugin.getGuildService();
+        GuildFeature feature = GuildFeature.SHORTNAME;
         player.closeInventory();
         plugin.getDialogManager().openShortnameDialog(player, shortname ->
                 plugin.getScheduler().runAsync(() ->

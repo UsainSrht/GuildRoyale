@@ -269,6 +269,15 @@ items:
       - " <gray>Open the shared guild chest. "
       - ""
 
+  main-storage-locked:
+    material: chest
+    name: "<gradient:#7f8c8d:#bdc3c7><bold>Storage</bold></gradient>"
+    lore:
+      - ""
+      - " <red>Locked "
+      - " <gray>Unlocks at guild level <yellow><level><gray>. "
+      - ""
+
   main-bank:
     material: gold_ingot
     name: "<gradient:#f4d03f:#f9e79f><bold>Bank</bold></gradient>"
@@ -276,6 +285,15 @@ items:
       - ""
       - " <gray>Check balance or manage funds "
       - " <gray>via <white>/guild bank "
+      - ""
+
+  main-bank-locked:
+    material: gold_ingot
+    name: "<gradient:#7f8c8d:#bdc3c7><bold>Bank</bold></gradient>"
+    lore:
+      - ""
+      - " <red>Locked "
+      - " <gray>Unlocks at guild level <yellow><level><gray>. "
       - ""
 
   main-settings:
@@ -295,6 +313,15 @@ items:
       - ""
       - " <gray>Change the guild shortname. "
       - " <yellow>Click <gray>to open the dialog. "
+      - ""
+
+  settings-shortname-locked:
+    material: name_tag
+    name: "<gradient:#7f8c8d:#bdc3c7><bold>Shortname</bold></gradient>"
+    lore:
+      - ""
+      - " <red>Locked "
+      - " <gray>Unlocks at guild level <yellow><level><gray>. "
       - ""
 
   settings-icon:

@@ -2,9 +2,14 @@ package me.usainsrht.guildroyale.core.gui;
 
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import io.papermc.paper.datacomponent.item.ItemLore;
+import me.usainsrht.guildroyale.api.domain.Guild;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
+import me.usainsrht.guildroyale.core.feature.FeatureGate;
+import me.usainsrht.guildroyale.core.feature.GuildFeature;
+import me.usainsrht.guildroyale.core.service.GuildServiceImpl;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
@@ -42,6 +47,31 @@ public final class GuiItems {
             return new ItemStack(Material.STONE);
         }
         return gui.item(key, resolvers);
+    }
+
+    /**
+     * Unlocked item when the guild meets the feature level; otherwise the locked
+     * variant with {@code <level>} set to the unlock requirement.
+     */
+    public static ItemStack featureItem(Guild guild, GuildFeature feature,
+                                        String unlockedKey, String lockedKey) {
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        if (plugin == null) {
+            return get(unlockedKey);
+        }
+        FeatureGate gate = ((GuildServiceImpl) plugin.getGuildService()).featureGate();
+        if (gate.isUnlocked(guild, feature)) {
+            return get(unlockedKey);
+        }
+        return get(lockedKey, Placeholder.unparsed("level", String.valueOf(gate.unlockLevel(feature))));
+    }
+
+    public static boolean isFeatureUnlocked(Guild guild, GuildFeature feature) {
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        if (plugin == null) {
+            return true;
+        }
+        return ((GuildServiceImpl) plugin.getGuildService()).featureGate().isUnlocked(guild, feature);
     }
 
     /** Clone with extra lore lines inserted before a trailing empty line when present. */
