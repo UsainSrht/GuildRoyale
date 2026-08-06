@@ -13,6 +13,7 @@ import me.usainsrht.guildroyale.core.config.ConfigManager;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.config.MessagesManager;
 import me.usainsrht.guildroyale.core.dialog.DialogManager;
+import me.usainsrht.guildroyale.core.event.EventDispatcher;
 import me.usainsrht.guildroyale.core.gui.GuiManager;
 import me.usainsrht.guildroyale.core.integration.GuildRoyalePlaceholderExpansion;
 import me.usainsrht.guildroyale.core.listener.GuildEventListener;
@@ -79,9 +80,10 @@ public final class GuildRoyalePlugin extends JavaPlugin {
         });
 
         EconomyProvider economy = EconomyProvider.load(getLogger(), getName());
+        EventDispatcher events = new EventDispatcher(scheduler);
 
-        guildService = new GuildServiceImpl(repository, configManager, economy, scheduler);
-        memberService = new MemberServiceImpl(repository, configManager);
+        guildService = new GuildServiceImpl(repository, configManager, economy, scheduler, events);
+        memberService = new MemberServiceImpl(repository, configManager, events);
         roleService = new RoleServiceImpl(repository);
         leaderboardService = new LeaderboardServiceImpl(repository, configManager, scheduler);
         leaderboardService.startRefreshTask();

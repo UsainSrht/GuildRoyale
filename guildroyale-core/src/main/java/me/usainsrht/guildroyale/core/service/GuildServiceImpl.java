@@ -8,6 +8,7 @@ import me.usainsrht.guildroyale.api.storage.GuildRepository;
 import me.usainsrht.guildroyale.core.config.BadgeDefinition;
 import me.usainsrht.guildroyale.core.config.ConfigManager;
 import me.usainsrht.guildroyale.core.config.ItemRequirement;
+import me.usainsrht.guildroyale.core.event.EventDispatcher;
 import me.usainsrht.guildroyale.core.event.GuildCreatedEvent;
 import me.usainsrht.guildroyale.core.event.GuildDisbandedEvent;
 import me.usainsrht.guildroyale.core.event.GuildLevelUpEvent;
@@ -38,15 +39,18 @@ public final class GuildServiceImpl implements GuildService {
     private final ConfigManager config;
     private final EconomyProvider economy;
     private final FoliaScheduler scheduler;
+    private final EventDispatcher events;
     private final FeatureGate featureGate;
     private final PermissionEvaluatorImpl evaluator = new PermissionEvaluatorImpl();
 
     public GuildServiceImpl(GuildRepository repo, ConfigManager config,
-                            EconomyProvider economy, FoliaScheduler scheduler) {
+                            EconomyProvider economy, FoliaScheduler scheduler,
+                            EventDispatcher events) {
         this.repo = repo;
         this.config = config;
         this.economy = economy;
         this.scheduler = scheduler;
+        this.events = events;
         this.featureGate = new FeatureGate(config);
     }
 
@@ -119,8 +123,7 @@ public final class GuildServiceImpl implements GuildService {
 
                         return repo.save(guild).thenApply(v -> {
                             economy.createGuildAccount(guildId, name);
-                            GuildCreatedEvent event = new GuildCreatedEvent(guild, ownerPlayerId);
-                            Bukkit.getPluginManager().callEvent(event);
+                            events.fire(new GuildCreatedEvent(guild, ownerPlayerId));
                             return ActionResult.success();
                         });
                     });
@@ -228,8 +231,7 @@ public final class GuildServiceImpl implements GuildService {
                 return done(ActionResult.failure("no-permission"));
             }
             return repo.delete(guildId).thenApply(v -> {
-                GuildDisbandedEvent event = new GuildDisbandedEvent(guild, requesterId);
-                Bukkit.getPluginManager().callEvent(event);
+                events.fire(new GuildDisbandedEvent(guild, requesterId));
                 return ActionResult.success();
             });
         });
@@ -261,8 +263,7 @@ public final class GuildServiceImpl implements GuildService {
             Guild guild = opt.get();
             guild.addXp(amount);
 
-            GuildXpGainedEvent xpEvent = new GuildXpGainedEvent(guild, amount);
-            Bukkit.getPluginManager().callEvent(xpEvent);
+            events.fire(new GuildXpGainedEvent(guild, amount));
 
             int levelCap = config.getLevelCap();
             int levelsGained = 0;
@@ -272,8 +273,7 @@ public final class GuildServiceImpl implements GuildService {
                 guild.setXp(guild.getXp() - required);
                 guild.setLevel(guild.getLevel() + 1);
                 levelsGained++;
-                GuildLevelUpEvent levelEvent = new GuildLevelUpEvent(guild, guild.getLevel() - 1, guild.getLevel());
-                Bukkit.getPluginManager().callEvent(levelEvent);
+                events.fire(new GuildLevelUpEvent(guild, guild.getLevel() - 1, guild.getLevel()));
             }
 
             final int gained = levelsGained;
@@ -329,8 +329,11 @@ public final class GuildServiceImpl implements GuildService {
         if (!NAME_PATTERN.matcher(name).matches()) {
             return done(ActionResult.failure("guild-name-invalid"));
         }
-        return repo.existsByName(name).thenCompose(taken -> {
-            if (taken) return done(ActionResult.failure("guild-name-taken"));
+        // A guild keeping its own name (or only changing its casing) is not a clash.
+        return repo.findByName(name).thenCompose(existing -> {
+            if (existing.isPresent() && !existing.get().getId().equals(guildId)) {
+                return done(ActionResult.failure("guild-name-taken"));
+            }
             return mutateGuild(guildId, requesterId, GuildPermissionKey.GUILD_SETTINGS, guild -> {
                 guild.setName(name);
             });

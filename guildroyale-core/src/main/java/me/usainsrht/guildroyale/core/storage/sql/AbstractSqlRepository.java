@@ -22,6 +22,13 @@ import java.util.concurrent.CompletableFuture;
  */
 public abstract class AbstractSqlRepository implements GuildRepository {
 
+    /** Widths of the indexed string columns; see {@link #keyText(int)}. */
+    private static final int UUID_LENGTH = 36;
+    private static final int GUILD_NAME_MAX = 32;
+    private static final int SHORTNAME_MAX = 16;
+    private static final int TIMESTAMP_MAX = 64;
+    private static final int PERMISSION_MAX = 64;
+
     protected final FoliaScheduler scheduler;
     protected HikariDataSource dataSource;
 
@@ -31,6 +38,23 @@ public abstract class AbstractSqlRepository implements GuildRepository {
 
     /** Subclasses configure and return their datasource. */
     protected abstract HikariDataSource buildDataSource();
+
+    /**
+     * Column type for indexed string keys (UUIDs, names, timestamps).
+     *
+     * <p>MySQL cannot index a {@code TEXT} column without a key length, so each
+     * backend supplies a type that is valid in a {@code PRIMARY KEY} or
+     * {@code UNIQUE} constraint.
+     *
+     * @param maxLength maximum number of characters the column must hold
+     */
+    protected abstract String keyText(int maxLength);
+
+    /**
+     * The dialect-specific tail of the {@code guilds} upsert, starting after the
+     * {@code VALUES (...)} clause. It must update every mutable column.
+     */
+    protected abstract String guildUpsertSuffix();
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -56,72 +80,86 @@ public abstract class AbstractSqlRepository implements GuildRepository {
     // ── Schema ────────────────────────────────────────────────────────────────
 
     private void createSchema(Connection conn) throws SQLException {
+        String uuid = keyText(UUID_LENGTH);
+        String guildName = keyText(GUILD_NAME_MAX);
+        String shortname = keyText(SHORTNAME_MAX);
+        String timestamp = keyText(TIMESTAMP_MAX);
+        String permission = keyText(PERMISSION_MAX);
+
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS guilds (
-                    id           TEXT PRIMARY KEY,
-                    name         TEXT NOT NULL UNIQUE,
-                    shortname    TEXT NOT NULL UNIQUE,
+                    id           %s PRIMARY KEY,
+                    name         %s NOT NULL UNIQUE,
+                    shortname    %s NOT NULL UNIQUE,
                     icon_mat     TEXT,
                     icon_data    BLOB,
                     level        INTEGER NOT NULL DEFAULT 1,
-                    xp           INTEGER NOT NULL DEFAULT 0,
-                    created_at   TEXT NOT NULL,
+                    xp           BIGINT NOT NULL DEFAULT 0,
+                    created_at   %s NOT NULL,
                     owned_badges TEXT,
                     active_badge TEXT
-                )""");
+                )""".formatted(uuid, guildName, shortname, timestamp));
 
             tryAddColumn(stmt, "guilds", "owned_badges", "TEXT");
             tryAddColumn(stmt, "guilds", "active_badge", "TEXT");
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS guild_roles (
-                    guild_id   TEXT NOT NULL,
+                    guild_id   %s NOT NULL,
                     role_index INTEGER NOT NULL,
                     name       TEXT NOT NULL,
                     icon_mat   TEXT,
                     icon_data  BLOB,
                     PRIMARY KEY (guild_id, role_index),
                     FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
-                )""");
+                )""".formatted(uuid));
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS guild_role_permissions (
-                    guild_id    TEXT NOT NULL,
+                    guild_id    %s NOT NULL,
                     role_index  INTEGER NOT NULL,
-                    permission  TEXT NOT NULL,
+                    permission  %s NOT NULL,
                     PRIMARY KEY (guild_id, role_index, permission),
                     FOREIGN KEY (guild_id, role_index) REFERENCES guild_roles(guild_id, role_index) ON DELETE CASCADE
-                )""");
+                )""".formatted(uuid, permission));
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS guild_members (
-                    guild_id     TEXT NOT NULL,
-                    player_id    TEXT NOT NULL,
+                    guild_id     %s NOT NULL,
+                    player_id    %s NOT NULL,
                     role_index   INTEGER NOT NULL,
-                    joined_at    TEXT NOT NULL,
-                    contribution INTEGER NOT NULL DEFAULT 0,
+                    joined_at    %s NOT NULL,
+                    contribution BIGINT NOT NULL DEFAULT 0,
                     PRIMARY KEY (guild_id, player_id),
                     FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
-                )""");
+                )""".formatted(uuid, uuid, timestamp));
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS guild_storage (
-                    guild_id  TEXT NOT NULL,
+                    guild_id  %s NOT NULL,
                     slot      INTEGER NOT NULL,
                     item_mat  TEXT,
                     item_data BLOB,
                     PRIMARY KEY (guild_id, slot),
                     FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
-                )""");
+                )""".formatted(uuid));
+
+            // MySQL rejects CREATE INDEX IF NOT EXISTS, so tolerate "already exists".
+            tryExecute(stmt, "CREATE INDEX idx_guild_members_player ON guild_members (player_id)");
         }
     }
 
     private static void tryAddColumn(Statement stmt, String table, String column, String type) {
+        tryExecute(stmt, "ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
+    }
+
+    /** Runs a migration statement that is expected to fail once already applied. */
+    private static void tryExecute(Statement stmt, String sql) {
         try {
-            stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
+            stmt.execute(sql);
         } catch (SQLException ignored) {
-            // Column already exists
+            // Already applied on a previous startup.
         }
     }
 
@@ -305,7 +343,6 @@ public abstract class AbstractSqlRepository implements GuildRepository {
         }
 
         // Load roles
-        List<GuildRole> roles = new ArrayList<>();
         try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT * FROM guild_roles WHERE guild_id = ? ORDER BY role_index")) {
             ps.setString(1, id);
@@ -315,16 +352,15 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     String rName = rs.getString("name");
                     SerializableItemStack rIcon = new SerializableItemStack(
                             rs.getString("icon_mat"), rs.getBytes("icon_data"));
-                    Set<GuildPermissionKey> perms = loadPermissions(conn, id, idx);
-                    roles.add(new GuildRole(rName, idx, perms, rIcon));
-                    guild.addRole(new GuildRole(rName, idx, perms, rIcon));
+                    guild.addRole(new GuildRole(rName, idx, loadPermissions(conn, id, idx), rIcon));
                 }
             }
         }
 
-        // Build index map for members
+        // Members reference the guild's own role instances so that a permission
+        // edit made through the guild is visible to every member holding it.
         Map<Integer, GuildRole> roleByIndex = new HashMap<>();
-        roles.forEach(r -> roleByIndex.put(r.getIndex(), r));
+        guild.getRoles().forEach(r -> roleByIndex.put(r.getIndex(), r));
 
         // Load members
         try (PreparedStatement ps = conn.prepareStatement(
@@ -336,8 +372,7 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     int rIdx = rs.getInt("role_index");
                     Instant joinedAt = Instant.parse(rs.getString("joined_at"));
                     long contribution = rs.getLong("contribution");
-                    GuildRole role = roleByIndex.getOrDefault(rIdx,
-                            roles.stream().max(Comparator.comparingInt(GuildRole::getIndex)).orElseThrow());
+                    GuildRole role = roleByIndex.getOrDefault(rIdx, guild.getDefaultRole());
                     guild.addMember(new GuildMember(playerId, role, joinedAt, contribution));
                 }
             }
@@ -388,11 +423,7 @@ public abstract class AbstractSqlRepository implements GuildRepository {
         String sql = """
             INSERT INTO guilds (id, name, shortname, icon_mat, icon_data, level, xp, created_at, owned_badges, active_badge)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-                name=excluded.name, shortname=excluded.shortname,
-                icon_mat=excluded.icon_mat, icon_data=excluded.icon_data,
-                level=excluded.level, xp=excluded.xp,
-                owned_badges=excluded.owned_badges, active_badge=excluded.active_badge""";
+            """ + guildUpsertSuffix();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, g.getId().toString());
             ps.setString(2, g.getName());

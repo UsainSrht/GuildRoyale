@@ -50,9 +50,9 @@ public final class GuildMembersGui extends StandardListGui<GuildMember> {
         int maxPage = Math.max(1, (int) Math.ceil(guild.getMemberCount() / (double) innerCount));
         int safePage = Math.max(0, Math.min(page, maxPage - 1)) + 1;
         if (gui == null) {
-            return formatStandardTitle("Members — " + guild.getName());
+            return formatStandardTitle("Members");
         }
-        return gui.title("members.title",
+        return gui.listTitle("members", safePage, maxPage,
                 Placeholder.unparsed("guild", guild.getName()),
                 Placeholder.unparsed("page", String.valueOf(safePage)),
                 Placeholder.unparsed("max_page", String.valueOf(maxPage)));
@@ -79,22 +79,21 @@ public final class GuildMembersGui extends StandardListGui<GuildMember> {
     @Override
     protected void onItemClick(InventoryClickEvent event, GuildMember member, int index) {
         if (event.getWhoClicked() instanceof Player player) {
-            new MemberActionGui(guild, member, viewer, guiManager).open(player);
+            new MemberActionGui(guild, member, viewer, guiManager)
+                    .returnTo(p -> new GuildMembersGui(guild, viewer, guiManager, page)
+                            .returnTo(this)
+                            .open(p))
+                    .open(player);
         }
     }
 
     @Override
     protected void onPreviousPage(Player player) {
-        new GuildMembersGui(guild, viewer, guiManager, page - 1).open(player);
+        new GuildMembersGui(guild, viewer, guiManager, page - 1).returnTo(this).open(player);
     }
 
     @Override
     protected void onNextPage(Player player) {
-        new GuildMembersGui(guild, viewer, guiManager, page + 1).open(player);
-    }
-
-    @Override
-    protected void onBack(Player player) {
-        new GuildMainGui(guild, viewer, guiManager).open(player);
+        new GuildMembersGui(guild, viewer, guiManager, page + 1).returnTo(this).open(player);
     }
 }

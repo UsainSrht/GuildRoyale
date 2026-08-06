@@ -8,6 +8,7 @@ import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.gui.AbstractGui;
 import me.usainsrht.guildroyale.core.gui.GuiItems;
 import me.usainsrht.guildroyale.core.gui.GuiManager;
+import me.usainsrht.guildroyale.core.gui.StandardListGui;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -17,6 +18,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+
+import java.util.List;
 
 /**
  * Displays and allows editing of a single guild role: its name, icon, and permissions.
@@ -42,10 +45,10 @@ public final class RoleEditorGui extends AbstractGui {
 
         GuiConfig gui = GuiItems.config();
         this.infoSlot = gui != null ? gui.slot("role-editor.slots.info", 4) : 4;
-        this.permissionsStart = gui != null ? gui.slot("role-editor.slots.permissions-start", 18) : 18;
-        this.setIconSlot = gui != null ? gui.slot("role-editor.slots.set-icon", 46) : 46;
-        this.deleteSlot = gui != null ? gui.slot("role-editor.slots.delete", 52) : 52;
-        this.backSlot = gui != null ? gui.slot("role-editor.slots.back", 45) : 45;
+        this.permissionsStart = gui != null ? gui.slot("role-editor.slots.permissions-start", 10) : 10;
+        this.setIconSlot = gui != null ? gui.slot("role-editor.slots.set-icon", 47) : 47;
+        this.deleteSlot = gui != null ? gui.slot("role-editor.slots.delete", 51) : 51;
+        this.backSlot = gui != null ? gui.slot("role-editor.slots.back", 49) : 49;
     }
 
     private static int size() {
@@ -63,16 +66,18 @@ public final class RoleEditorGui extends AbstractGui {
 
     @Override
     protected void build() {
+        fillBorder(GuiItems.filler());
+
         setSlot(infoSlot, GuiItems.get("role-editor-info",
                 Placeholder.unparsed("role", role.getName())));
 
         GuiConfig gui = GuiItems.config();
         String enabledTpl = gui != null
-                ? gui.string("role-editor.permission-enabled", "<green>✔ <permission>")
-                : "<green>✔ <permission>";
+                ? gui.string("role-editor.permission-enabled", "<green><bold>✔ <permission>")
+                : "<green><bold>✔ <permission>";
         String disabledTpl = gui != null
-                ? gui.string("role-editor.permission-disabled", "<red>✗ <permission>")
-                : "<red>✗ <permission>";
+                ? gui.string("role-editor.permission-disabled", "<red><bold>✗ <permission>")
+                : "<red><bold>✗ <permission>";
         Material enabledMat = gui != null
                 ? gui.material("role-editor.materials.permission-enabled", Material.LIME_DYE)
                 : Material.LIME_DYE;
@@ -82,7 +87,15 @@ public final class RoleEditorGui extends AbstractGui {
 
         GuildPermissionKey[] keys = GuildPermissionKey.values();
         MiniMessage mm = MiniMessage.miniMessage();
-        for (int i = 0; i < keys.length; i++) {
+        List<Integer> contentSlots = StandardListGui.calculateInnerSlots(size / 9);
+        int startIdx = 0;
+        for (int i = 0; i < contentSlots.size(); i++) {
+            if (contentSlots.get(i) >= permissionsStart) {
+                startIdx = i;
+                break;
+            }
+        }
+        for (int i = 0; i < keys.length && startIdx + i < contentSlots.size(); i++) {
             GuildPermissionKey key = keys[i];
             boolean has = role.hasPermission(key);
             ItemStack item = new ItemStack(has ? enabledMat : disabledMat);
@@ -91,7 +104,7 @@ public final class RoleEditorGui extends AbstractGui {
             meta.displayName(mm.deserialize(tpl, Placeholder.unparsed("permission", key.name()))
                     .decoration(TextDecoration.ITALIC, false));
             item.setItemMeta(meta);
-            setSlot(permissionsStart + i, item);
+            setSlot(contentSlots.get(startIdx + i), item);
         }
 
         setSlot(setIconSlot, GuiItems.get("role-editor-set-icon"));
@@ -100,7 +113,7 @@ public final class RoleEditorGui extends AbstractGui {
             setSlot(deleteSlot, GuiItems.get("role-editor-delete"));
         }
 
-        setSlot(backSlot, GuiItems.get("gui-back"));
+        setSlot(backSlot, navBackItem());
     }
 
     @Override
@@ -108,7 +121,7 @@ public final class RoleEditorGui extends AbstractGui {
         if (!(event.getWhoClicked() instanceof Player player)) return true;
         int slot = event.getRawSlot();
         if (slot == backSlot) {
-            new RoleManagementGui(guild, viewer, guiManager).open(player);
+            navigateBack(player);
         }
         // Permission toggle clicks would call RoleService async
         return true;

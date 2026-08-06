@@ -82,6 +82,19 @@ public final class GuiConfig {
         return component(path, "<red>Missing title: " + path, resolvers);
     }
 
+    /**
+     * Resolves a GUI title, using {@code prefix.title-paged} when there is more
+     * than one page so the non-bold {@code page (current/max)} suffix can appear.
+     */
+    public Component listTitle(String prefix, int currentPage, int maxPage, TagResolver... resolvers) {
+        String path = maxPage > 1 ? prefix + ".title-paged" : prefix + ".title";
+        String fallback = maxPage > 1
+                ? "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>" + prefix
+                + "</bold> page (<page>/<max_page>)</gradient></shadow>"
+                : "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>" + prefix + "</bold></gradient></shadow>";
+        return component(path, fallback, resolvers);
+    }
+
     public Component component(String path, String def, TagResolver... resolvers) {
         String raw = config.getString(path, def);
         return plain(mm.deserialize(raw != null ? raw : def, resolvers));

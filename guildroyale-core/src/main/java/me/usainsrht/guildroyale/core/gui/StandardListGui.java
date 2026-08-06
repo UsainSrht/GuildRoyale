@@ -175,6 +175,7 @@ public abstract class StandardListGui<T> extends AbstractGui {
         }
 
         // 2. Render Action Buttons
+        // Previous/next only appear when that page exists.
         int maxPages = Math.max(1, (int) Math.ceil(items.size() / (double) pageSize));
 
         if (page > 0) {
@@ -278,9 +279,9 @@ public abstract class StandardListGui<T> extends AbstractGui {
     /** Called when the next page button is clicked. */
     protected void onNextPage(Player player) {}
 
-    /** Called when the back button (bottom center) is clicked. */
+    /** Called when the back/close button (bottom center) is clicked. */
     protected void onBack(Player player) {
-        player.closeInventory();
+        navigateBack(player);
     }
 
     /** Called when action 1 button (bottom center + 2) is clicked. */
@@ -301,7 +302,7 @@ public abstract class StandardListGui<T> extends AbstractGui {
     }
 
     protected @Nullable ItemStack getBackItem() {
-        return GuiItems.get("gui-back");
+        return navBackItem();
     }
 
     protected @Nullable ItemStack getAction1Item() {

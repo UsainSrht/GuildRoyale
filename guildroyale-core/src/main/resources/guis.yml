@@ -2,37 +2,45 @@
 #  GuildRoyale — guis.yml
 #  Titles/lores use MiniMessage. Placeholders: <guild>, <page>, <max_page>, …
 #  Items are parsed by YamlItem (ItemAPI).
+#
+#  Conventions:
+#    - Titles: bold + <shadow:#000000FF>, soft gradient preferred
+#    - Paged titles: base title + non-bold " page (current/max)" via title-paged
+#    - Default size: 54 (6 rows)
+#    - List nav: prev=45, action2=47, back=49, action1=51, next=53, top-action=4
+#    - Item names: bold (+ soft gradient preferred)
+#    - Lore: empty first/last line; each content line padded with a trailing space
 # ─────────────────────────────────────────────────────────────────
 
 hub:
-  size: 27
-  title: "<gradient:#f0c14b:#ffe08a><bold>GuildRoyale</bold></gradient>"
+  size: 54
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>GuildRoyale</bold></gradient></shadow>"
   slots:
-    info: 11
-    create: 15
-    leaderboard: 13
+    info: 20
+    leaderboard: 31
+    create: 24
   requirements:
-    separator: "<dark_gray>─────────────────"
-    header: "<yellow>Requirements:"
-    permission-ok: "<green>✔ <gray>Permission"
-    permission-fail: "<red>✘ <gray>Permission <dark_gray>(<node>)"
-    cost-ok: "<green>✔ <gray>Cost: <white><cost>"
-    cost-fail: "<red>✘ <gray>Cost: <white><cost>"
-    item-ok-prefix: "<green>✔ "
-    item-fail-prefix: "<red>✘ "
-    none: "<gray>None — free to create!"
+    separator: " <dark_gray>───────────────── "
+    header: " <yellow>Requirements: "
+    permission-ok: " <green>✔ <gray>Permission "
+    permission-fail: " <red>✘ <gray>Permission <dark_gray>(<node>) "
+    cost-ok: " <green>✔ <gray>Cost: <white><cost> "
+    cost-fail: " <red>✘ <gray>Cost: <white><cost> "
+    item-ok-prefix: " <green>✔ "
+    item-fail-prefix: " <red>✘ "
+    none: " <gray>None: free to create! "
 
 dialogs:
   create:
     title: "<gold><bold>Create a Guild"
-    body: "<gray>Choose a <white>name</white> (3–32 chars) and a <white>shortname</white> (2–6 alphanumeric)."
-    body-no-shortname: "<gray>Choose a <white>name</white> (3–32 chars)."
+    body: "<gray>Choose a <white>name</white> (3-32 chars) and a <white>shortname</white> (2-6 alphanumeric)."
+    body-no-shortname: "<gray>Choose a <white>name</white> (3-32 chars)."
     name-label: "<yellow>Guild Name"
     shortname-label: "<yellow>Shortname"
     submit: "<green>Create Guild"
   shortname:
     title: "<gold>Change Shortname"
-    body: "<gray>Enter a new shortname <dark_gray>(2–6 alphanumeric)."
+    body: "<gray>Enter a new shortname <dark_gray>(2-6 alphanumeric)."
     input-label: "<yellow>New Shortname"
     submit: "<green>Change"
   role-name:
@@ -42,50 +50,52 @@ dialogs:
     submit: "<green>Confirm"
 
 main:
-  size: 27
-  title: "<gold>Guild Menu <dark_gray>— <yellow><guild>"
+  size: 54
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Menu</bold></gradient></shadow>"
   slots:
-    icon: 4
-    info: 10
-    members: 11
-    roles: 12
-    leaderboard: 13
-    storage: 14
-    bank: 15
-    settings: 16
-    disband: 22
+    icon: 13
+    info: 20
+    members: 22
+    roles: 24
+    leaderboard: 29
+    storage: 31
+    bank: 33
+    settings: 40
 
 info:
-  size: 27
-  title: "<gold>Guild Info <dark_gray>— <yellow><guild>"
+  size: 54
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Info</bold></gradient></shadow>"
   slots:
-    info: 13
-    back: 22
-  badge-line: "<gray>Badge: <badge>"
+    info: 22
+    back: 49
+  badge-line: " <gray>Badge: <badge> "
 
 members:
   size: 54
-  title: "<gradient:#f0c14b:#ffe08a><bold><shadow:#000000FF>Members — <guild> (Page <page>/<max_page>)</shadow></bold></gradient>"
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Members</bold></gradient></shadow>"
+  title-paged: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Members</bold> page (<page>/<max_page>)</gradient></shadow>"
   slots:
     previous: 45
     action2: 47
     back: 49
     action1: 51
     next: 53
+    top-action: 4
 
 member-action:
-  size: 27
-  title: "<gradient:#f0c14b:#ffe08a><bold><shadow:#000000FF>Member: <player></shadow></bold></gradient>"
+  size: 54
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Member: <player></bold></gradient></shadow>"
   slots:
-    head: 4
-    kick: 11
-    promote: 13
-    demote: 15
-    back: 22
+    head: 13
+    kick: 29
+    promote: 31
+    demote: 33
+    back: 49
 
 roles:
   size: 54
-  title: "<gradient:#f0c14b:#ffe08a><bold><shadow:#000000FF>Roles — <guild></shadow></bold></gradient>"
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Roles</bold></gradient></shadow>"
+  title-paged: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Roles</bold> page (<page>/<max_page>)</gradient></shadow>"
   slots:
     previous: 45
     action2: 47
@@ -93,38 +103,50 @@ roles:
     action1: 51
     create: 51
     next: 53
+    top-action: 4
 
 role-editor:
   size: 54
-  title: "<gradient:#f0c14b:#ffe08a><bold><shadow:#000000FF>Edit Role: <role></shadow></bold></gradient>"
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Edit Role: <role></bold></gradient></shadow>"
   slots:
     info: 4
-    permissions-start: 18
-    set-icon: 46
-    delete: 52
-    back: 45
-  permission-enabled: "<green>✔ <permission>"
-  permission-disabled: "<red>✗ <permission>"
+    permissions-start: 10
+    set-icon: 47
+    delete: 51
+    back: 49
+  permission-enabled: "<green><bold>✔ <permission>"
+  permission-disabled: "<red><bold>✗ <permission>"
   materials:
     permission-enabled: lime_dye
     permission-disabled: red_dye
 
 leaderboard:
   size: 54
-  title: "<gradient:#f0c14b:#ffe08a><bold><shadow:#000000FF>Guild Leaderboard — Page <page>/<max_page></shadow></bold></gradient>"
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Leaderboard</bold></gradient></shadow>"
+  title-paged: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Leaderboard</bold> page (<page>/<max_page>)</gradient></shadow>"
   slots:
     previous: 45
     action2: 47
     back: 49
     action1: 51
     next: 53
+    top-action: 4
+
+settings:
+  size: 54
+  title: "<shadow:#000000FF><gradient:#aab7b8:#d5dbdb><bold>Guild Settings</bold></gradient></shadow>"
+  slots:
+    shortname: 20
+    icon: 22
+    disband: 24
+    back: 49
 
 storage:
-  title: "<gold>Guild Storage <dark_gray>— <yellow><guild>"
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Storage</bold></gradient></shadow>"
 
 icon-selection:
   size: 54
-  title: "<aqua>Select an icon <dark_gray>— click any item"
+  title: "<shadow:#000000FF><gradient:#5dade2:#aed6f1><bold>Select an Icon</bold></gradient></shadow>"
   content-slots: 36
   instruction-slot: 49
   instruction-row-start: 45
@@ -134,116 +156,165 @@ items:
   # ── Hub (not in a guild) ───────────────────────────────────────
   hub-info-book:
     material: book
-    name: "<gold><bold>How Guilds Work"
+    name: "<gradient:#f0c14b:#ffe08a><bold>How Guilds Work</bold></gradient>"
     lore:
-      - "<gray>Guilds let you team up, share"
-      - "<gray>storage & bank, earn XP, and"
-      - "<gray>climb the leaderboard."
       - ""
-      - "<yellow>Getting started"
-      - "<white>1. <gray>Meet the requirements"
-      - "<white>2. <gray>Click <green>Create a Guild"
-      - "<white>3. <gray>Pick a name & shortname"
-      - "<white>4. <gray>Invite friends with"
-      - "   <yellow>/guild invite <player>"
+      - " <gray>Guilds let you team up, share "
+      - " <gray>storage & bank, earn XP, and "
+      - " <gray>climb the leaderboard. "
       - ""
-      - "<dark_gray>Hover the create button for"
-      - "<dark_gray>live requirement status."
+      - " <yellow>Getting started "
+      - " <white>1. <gray>Meet the requirements "
+      - " <white>2. <gray>Click <green>Create a Guild "
+      - " <white>3. <gray>Pick a name & shortname "
+      - " <white>4. <gray>Invite friends with "
+      - "    <yellow>/guild invite <player> "
+      - ""
+      - " <dark_gray>Hover the create button for "
+      - " <dark_gray>live requirement status. "
+      - ""
 
   create-ready:
     material: lime_concrete
-    name: "<green><bold>Create a Guild"
+    name: "<gradient:#55c57a:#a8e6c1><bold>Create a Guild</bold></gradient>"
     lore:
-      - "<gray>You meet the requirements!"
-      - "<yellow>Click <gray>to open the creation dialog."
+      - ""
+      - " <gray>You meet the requirements! "
+      - " <yellow>Click <gray>to open the creation dialog. "
+      - ""
 
   create-already-in-guild:
     material: barrier
-    name: "<red><bold>Already in a Guild"
+    name: "<gradient:#e74c3c:#f1948a><bold>Already in a Guild</bold></gradient>"
     lore:
-      - "<gray>Leave or disband your current"
-      - "<gray>guild before creating another."
+      - ""
+      - " <gray>Leave or disband your current "
+      - " <gray>guild before creating another. "
+      - ""
 
   create-no-permission:
     material: red_concrete
-    name: "<red><bold>Cannot Create"
+    name: "<gradient:#e74c3c:#f1948a><bold>Cannot Create</bold></gradient>"
     lore:
-      - "<gray>You lack permission to create"
-      - "<gray>a guild on this server."
+      - ""
+      - " <gray>You lack permission to create "
+      - " <gray>a guild on this server. "
+      - ""
 
   create-insufficient-funds:
     material: red_concrete
-    name: "<red><bold>Not Enough Money"
+    name: "<gradient:#e74c3c:#f1948a><bold>Not Enough Money</bold></gradient>"
     lore:
-      - "<gray>Earn more money, then try again."
+      - ""
+      - " <gray>Earn more money, then try again. "
+      - ""
 
   create-missing-items:
     material: red_concrete
-    name: "<red><bold>Missing Items"
+    name: "<gradient:#e74c3c:#f1948a><bold>Missing Items</bold></gradient>"
     lore:
-      - "<gray>Gather the required items,"
-      - "<gray>then try again."
+      - ""
+      - " <gray>Gather the required items, "
+      - " <gray>then try again. "
+      - ""
 
   hub-leaderboard:
     material: golden_helmet
-    name: "<gold>Leaderboard"
+    name: "<gradient:#f0c14b:#ffe08a><bold>Leaderboard</bold></gradient>"
     lore:
-      - "<gray>See the top guilds"
-      - "<gray>on this server."
+      - ""
+      - " <gray>See the top guilds "
+      - " <gray>on this server. "
+      - ""
 
   # ── Main menu (in a guild) ─────────────────────────────────────
   main-info:
     material: paper
-    name: "<aqua>Guild Info"
+    name: "<gradient:#5dade2:#aed6f1><bold>Guild Info</bold></gradient>"
     lore:
-      - "<gray>View level, XP, members,"
-      - "<gray>and other guild details."
+      - ""
+      - " <gray>View level, XP, members, "
+      - " <gray>and other guild details. "
+      - ""
 
   main-members:
     material: player_head
-    name: "<green>Members"
+    name: "<gradient:#55c57a:#a8e6c1><bold>Members</bold></gradient>"
     lore:
-      - "<gray>View and manage members."
+      - ""
+      - " <gray>View and manage members. "
+      - ""
 
   main-roles:
     material: writable_book
-    name: "<yellow>Roles"
+    name: "<gradient:#f4d03f:#f9e79f><bold>Roles</bold></gradient>"
     lore:
-      - "<gray>Manage roles & permissions."
+      - ""
+      - " <gray>Manage roles & permissions. "
+      - ""
 
   main-leaderboard:
     material: golden_helmet
-    name: "<gold>Leaderboard"
+    name: "<gradient:#f0c14b:#ffe08a><bold>Leaderboard</bold></gradient>"
     lore:
-      - "<gray>Global guild rankings."
+      - ""
+      - " <gray>Global guild rankings. "
+      - ""
 
   main-storage:
     material: chest
-    name: "<gold>Storage"
+    name: "<gradient:#f0c14b:#ffe08a><bold>Storage</bold></gradient>"
     lore:
-      - "<gray>Open the shared guild chest."
+      - ""
+      - " <gray>Open the shared guild chest. "
+      - ""
 
   main-bank:
     material: gold_ingot
-    name: "<yellow>Bank"
+    name: "<gradient:#f4d03f:#f9e79f><bold>Bank</bold></gradient>"
     lore:
-      - "<gray>Check balance or manage funds"
-      - "<gray>via <white>/guild bank"
+      - ""
+      - " <gray>Check balance or manage funds "
+      - " <gray>via <white>/guild bank "
+      - ""
 
   main-settings:
     material: comparator
-    name: "<gray>Settings"
+    name: "<gradient:#aab7b8:#d5dbdb><bold>Settings</bold></gradient>"
     lore:
-      - "<gray>Change shortname, icon,"
-      - "<gray>and other guild options."
+      - ""
+      - " <gray>Change shortname, icon, "
+      - " <gray>and other guild options. "
+      - ""
 
-  main-disband:
-    material: barrier
-    name: "<red>Disband"
+  # ── Settings ───────────────────────────────────────────────────
+  settings-shortname:
+    material: name_tag
+    name: "<gradient:#f4d03f:#f9e79f><bold>Shortname</bold></gradient>"
     lore:
-      - "<red>Permanently delete this guild."
-      - "<dark_gray>Leaders only — use"
-      - "<yellow>/guild disband"
+      - ""
+      - " <gray>Change the guild shortname. "
+      - " <yellow>Click <gray>to open the dialog. "
+      - ""
+
+  settings-icon:
+    material: item_frame
+    name: "<gradient:#5dade2:#aed6f1><bold>Icon</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Pick a new guild icon "
+      - " <gray>from your inventory. "
+      - ""
+
+  settings-disband:
+    material: barrier
+    name: "<gradient:#e74c3c:#f1948a><bold>Disband</bold></gradient>"
+    lore:
+      - ""
+      - " <red>Permanently delete this guild. "
+      - " <dark_gray>Leaders only: use "
+      - " <yellow>/guild disband "
+      - ""
 
   # ── Shared nav ─────────────────────────────────────────────────
   gui-border-filler:
@@ -261,121 +332,161 @@ items:
 
   gui-back:
     material: arrow
-    name: "<gray>Back"
+    name: "<gradient:#aab7b8:#d5dbdb><bold>Back</bold></gradient>"
     lore:
-      - "<dark_gray>Return to the previous menu."
+      - ""
+      - " <dark_gray>Return to the previous menu. "
+      - ""
 
   gui-previous:
     material: arrow
-    name: "<aqua>« Previous Page"
-    lore: []
+    name: "<gradient:#5dade2:#aed6f1><bold>« Previous Page</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Go to the previous page. "
+      - ""
 
   gui-next:
     material: arrow
-    name: "<aqua>Next Page »"
-    lore: []
+    name: "<gradient:#5dade2:#aed6f1><bold>Next Page »</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Go to the next page. "
+      - ""
 
   gui-close:
     material: barrier
-    name: "<red>Close"
-    lore: []
+    name: "<gradient:#e74c3c:#f1948a><bold>Close</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Close this menu. "
+      - ""
 
   # ── Info ───────────────────────────────────────────────────────
   info-book:
     material: book
-    name: "<gold><guild>"
+    name: "<gradient:#f0c14b:#ffe08a><bold><guild></bold></gradient>"
     lore:
-      - "<gray>Shortname: [<shortname>]"
-      - "<gray>Level: <level>"
-      - "<gray>XP: <xp>"
-      - "<gray>Members: <members>"
-      - "<gray>Leader: <leader>"
-      - "<gray>Founded: <founded>"
+      - ""
+      - " <gray>Shortname: [<shortname>] "
+      - " <gray>Level: <level> "
+      - " <gray>XP: <xp> "
+      - " <gray>Members: <members> "
+      - " <gray>Leader: <leader> "
+      - " <gray>Founded: <founded> "
+      - ""
 
   # ── Members ────────────────────────────────────────────────────
   members-entry:
     material: player_head
-    name: "<yellow><player>"
+    name: "<gradient:#f4d03f:#f9e79f><bold><player></bold></gradient>"
     lore:
-      - "<gray>Role: <white><role>"
-      - "<gray>Contribution: <white><contribution> XP"
-      - "<yellow>Click to manage"
+      - ""
+      - " <gray>Role: <white><role> "
+      - " <gray>Contribution: <white><contribution> XP "
+      - " <yellow>Click to manage "
+      - ""
 
   # ── Member action ──────────────────────────────────────────────
   member-action-head:
     material: player_head
-    name: "<yellow><player>"
+    name: "<gradient:#f4d03f:#f9e79f><bold><player></bold></gradient>"
     lore:
-      - "<gray>Role: <white><role>"
-      - "<gray>Contribution: <white><contribution> XP"
+      - ""
+      - " <gray>Role: <white><role> "
+      - " <gray>Contribution: <white><contribution> XP "
+      - ""
 
   member-action-kick:
     material: barrier
-    name: "<red>Kick"
+    name: "<gradient:#e74c3c:#f1948a><bold>Kick</bold></gradient>"
     lore:
-      - "<gray>Remove this member from the guild"
+      - ""
+      - " <gray>Remove this member from the guild "
+      - ""
 
   member-action-promote:
     material: arrow
-    name: "<green>Promote"
+    name: "<gradient:#55c57a:#a8e6c1><bold>Promote</bold></gradient>"
     lore:
-      - "<gray>Move to a higher role"
+      - ""
+      - " <gray>Move to a higher role "
+      - ""
 
   member-action-demote:
     material: arrow
-    name: "<yellow>Demote"
+    name: "<gradient:#f4d03f:#f9e79f><bold>Demote</bold></gradient>"
     lore:
-      - "<gray>Move to a lower role"
+      - ""
+      - " <gray>Move to a lower role "
+      - ""
 
   # ── Roles ──────────────────────────────────────────────────────
   roles-entry:
     material: name_tag
-    name: "<gold><role>"
+    name: "<gradient:#f0c14b:#ffe08a><bold><role></bold></gradient>"
     lore:
-      - "<gray>Index: <white><index>"
-      - "<gray>Permissions: <white><permissions>"
-      - "<yellow>Click to edit"
+      - ""
+      - " <gray>Index: <white><index> "
+      - " <gray>Permissions: <white><permissions> "
+      - " <yellow>Click to edit "
+      - ""
 
   roles-create:
     material: lime_dye
-    name: "<green>+ Create New Role"
-    lore: []
+    name: "<gradient:#55c57a:#a8e6c1><bold>+ Create New Role</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Add a new role to this guild. "
+      - ""
 
   # ── Role editor ────────────────────────────────────────────────
   role-editor-info:
     material: name_tag
-    name: "<gold>Role: <role>"
-    lore: []
+    name: "<gradient:#f0c14b:#ffe08a><bold>Role: <role></bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Toggle permissions below. "
+      - ""
 
   role-editor-set-icon:
     material: painting
-    name: "<aqua>Set Icon"
+    name: "<gradient:#5dade2:#aed6f1><bold>Set Icon</bold></gradient>"
     lore:
-      - "<gray>Hold an item and click to set as role icon"
+      - ""
+      - " <gray>Hold an item and click to set as role icon "
+      - ""
 
   role-editor-delete:
     material: barrier
-    name: "<red>Delete Role"
+    name: "<gradient:#e74c3c:#f1948a><bold>Delete Role</bold></gradient>"
     lore:
-      - "<red>Remove this role. Members will be reassigned."
+      - ""
+      - " <red>Remove this role. Members will be reassigned. "
+      - ""
 
   # ── Leaderboard ────────────────────────────────────────────────
   leaderboard-entry:
     material: golden_helmet
-    name: "<gold>#<rank> <guild>"
+    name: "<gradient:#f0c14b:#ffe08a><bold>#<rank> <guild></bold></gradient>"
     lore:
-      - "<gray>[<shortname>]"
-      - "<gray>Level: <white><level>"
-      - "<gray>XP: <white><xp>"
-      - "<gray>Members: <white><members>"
+      - ""
+      - " <gray>[<shortname>] "
+      - " <gray>Level: <white><level> "
+      - " <gray>XP: <white><xp> "
+      - " <gray>Members: <white><members> "
+      - ""
 
   # ── Icon selection ─────────────────────────────────────────────
   icon-selection-pane:
     material: cyan_stained_glass_pane
     name: " "
-    lore: []
+    hide-tooltip: true
 
   icon-selection-instruction:
     material: cyan_stained_glass_pane
-    name: "<aqua>Click any item above to select it as the icon"
-    lore: []
+    name: "<gradient:#5dade2:#aed6f1><bold>Click an item above to select it</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Any item from your inventory works. "
+      - ""

@@ -47,4 +47,19 @@ public final class MySQLGuildRepository extends AbstractSqlRepository {
         config.setPoolName("GuildRoyale-MySQL");
         return new HikariDataSource(config);
     }
+
+    @Override
+    protected String keyText(int maxLength) {
+        return "VARCHAR(" + maxLength + ")";
+    }
+
+    @Override
+    protected String guildUpsertSuffix() {
+        return """
+            ON DUPLICATE KEY UPDATE
+                name=VALUES(name), shortname=VALUES(shortname),
+                icon_mat=VALUES(icon_mat), icon_data=VALUES(icon_data),
+                level=VALUES(level), xp=VALUES(xp),
+                owned_badges=VALUES(owned_badges), active_badge=VALUES(active_badge)""";
+    }
 }

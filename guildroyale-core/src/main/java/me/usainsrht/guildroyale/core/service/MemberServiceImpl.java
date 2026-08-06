@@ -8,12 +8,11 @@ import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.api.service.MemberService;
 import me.usainsrht.guildroyale.api.storage.GuildRepository;
 import me.usainsrht.guildroyale.core.config.ConfigManager;
-import me.usainsrht.guildroyale.core.event.*;
+import me.usainsrht.guildroyale.core.event.EventDispatcher;
 import me.usainsrht.guildroyale.core.event.GuildMemberJoinEvent;
 import me.usainsrht.guildroyale.core.event.GuildMemberKickedEvent;
 import me.usainsrht.guildroyale.core.event.GuildMemberLeaveEvent;
 import me.usainsrht.guildroyale.core.event.GuildRoleChangedEvent;
-import org.bukkit.Bukkit;
 
 import java.time.Instant;
 import java.util.*;
@@ -37,11 +36,13 @@ public final class MemberServiceImpl implements MemberService {
 
     private final GuildRepository repo;
     private final ConfigManager config;
+    private final EventDispatcher events;
     private final PermissionEvaluatorImpl evaluator = new PermissionEvaluatorImpl();
 
-    public MemberServiceImpl(GuildRepository repo, ConfigManager config) {
+    public MemberServiceImpl(GuildRepository repo, ConfigManager config, EventDispatcher events) {
         this.repo = repo;
         this.config = config;
+        this.events = events;
     }
 
     // ── Invite ────────────────────────────────────────────────────────────────
@@ -90,8 +91,7 @@ public final class MemberServiceImpl implements MemberService {
                 revokeInvite(guildId, playerId);
 
                 return repo.save(guild).thenApply(v -> {
-                    GuildMemberJoinEvent event = new GuildMemberJoinEvent(guild, newMember);
-                    Bukkit.getPluginManager().callEvent(event);
+                    events.fire(new GuildMemberJoinEvent(guild, newMember));
                     return ActionResult.success();
                 });
             });
@@ -112,8 +112,7 @@ public final class MemberServiceImpl implements MemberService {
             }
             guild.removeMember(playerId);
             return repo.save(guild).thenApply(v -> {
-                GuildMemberLeaveEvent event = new GuildMemberLeaveEvent(guild, memberOpt.get());
-                Bukkit.getPluginManager().callEvent(event);
+                events.fire(new GuildMemberLeaveEvent(guild, memberOpt.get()));
                 return ActionResult.success();
             });
         });
@@ -137,8 +136,7 @@ public final class MemberServiceImpl implements MemberService {
             GuildMember target = targetOpt.get();
             guild.removeMember(targetPlayerId);
             return repo.save(guild).thenApply(v -> {
-                GuildMemberKickedEvent event = new GuildMemberKickedEvent(guild, target, requesterId);
-                Bukkit.getPluginManager().callEvent(event);
+                events.fire(new GuildMemberKickedEvent(guild, target, requesterId));
                 return ActionResult.success();
             });
         });
@@ -166,8 +164,7 @@ public final class MemberServiceImpl implements MemberService {
             GuildRole oldRole = target.getRole();
             target.setRole(newRoleOpt.get());
             return repo.save(guild).thenApply(v -> {
-                GuildRoleChangedEvent event = new GuildRoleChangedEvent(guild, target, oldRole, newRoleOpt.get());
-                Bukkit.getPluginManager().callEvent(event);
+                events.fire(new GuildRoleChangedEvent(guild, target, oldRole, newRoleOpt.get()));
                 return ActionResult.success();
             });
         });

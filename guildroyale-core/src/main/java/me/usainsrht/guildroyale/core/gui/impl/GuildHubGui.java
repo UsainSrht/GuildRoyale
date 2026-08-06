@@ -31,14 +31,14 @@ public final class GuildHubGui extends AbstractGui {
         this.status = CreateEligibility.evaluate(viewer, alreadyInGuild);
 
         GuiConfig gui = GuiItems.config();
-        this.infoSlot = gui != null ? gui.slot("hub.slots.info", 11) : 11;
-        this.createSlot = gui != null ? gui.slot("hub.slots.create", 15) : 15;
-        this.leaderboardSlot = gui != null ? gui.slot("hub.slots.leaderboard", 13) : 13;
+        this.infoSlot = gui != null ? gui.slot("hub.slots.info", 20) : 20;
+        this.createSlot = gui != null ? gui.slot("hub.slots.create", 24) : 24;
+        this.leaderboardSlot = gui != null ? gui.slot("hub.slots.leaderboard", 31) : 31;
     }
 
     private static int size(Player viewer) {
         GuiConfig gui = GuiItems.config();
-        return gui != null ? gui.size("hub.size", 27) : 27;
+        return gui != null ? gui.size("hub.size", 54) : 54;
     }
 
     private static net.kyori.adventure.text.Component title(Player viewer) {
@@ -98,6 +98,7 @@ public final class GuildHubGui extends AbstractGui {
                     plugin.getLeaderboardService().getGlobalLeaderboard(0, pageSize).thenAccept(guilds ->
                             plugin.getScheduler().runForEntity(player, () -> {
                                 LeaderboardGui gui = new LeaderboardGui(guiManager, plugin.getLeaderboardService(), 0);
+                                gui.returnTo(p -> new GuildHubGui(p, false, guiManager).open(p));
                                 gui.setGuilds(guilds);
                                 gui.open(player);
                             })

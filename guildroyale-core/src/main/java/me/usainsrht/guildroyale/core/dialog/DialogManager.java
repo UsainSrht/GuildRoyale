@@ -59,8 +59,8 @@ public final class DialogManager {
         boolean askShortname = plugin == null || plugin.getConfigManager().getFeatureUnlockLevel(GuildFeature.SHORTNAME) <= 1;
 
         Component bodyText = askShortname
-                ? text("dialogs.create.body", "<gray>Choose a <white>name</white> (3–32 chars) and a <white>shortname</white> (2–6 alphanumeric).")
-                : text("dialogs.create.body-no-shortname", "<gray>Choose a <white>name</white> (3–32 chars).");
+                ? text("dialogs.create.body", "<gray>Choose a <white>name</white> (3-32 chars) and a <white>shortname</white> (2-6 alphanumeric).")
+                : text("dialogs.create.body-no-shortname", "<gray>Choose a <white>name</white> (3-32 chars).");
 
         List<DialogInput> inputs = new ArrayList<>();
         inputs.add(DialogInput.text("guild_name", 200,
@@ -104,7 +104,7 @@ public final class DialogManager {
                 DialogBase.DialogAfterAction.CLOSE,
                 List.of(DialogBody.plainMessage(text(
                         "dialogs.shortname.body",
-                        "<gray>Enter a new shortname <dark_gray>(2–6 alphanumeric)."))),
+                        "<gray>Enter a new shortname <dark_gray>(2-6 alphanumeric)."))),
                 List.of(DialogInput.text("shortname", 200,
                         text("dialogs.shortname.input-label", "<yellow>New Shortname"), true, "", 6, null))
         );

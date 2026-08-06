@@ -96,15 +96,15 @@ public final class CreateEligibility {
         var config = plugin.getConfigManager();
         GuildServiceImpl service = (GuildServiceImpl) plugin.getGuildService();
 
-        lines.add(line(gui, mm, "hub.requirements.separator", "<dark_gray>─────────────────"));
-        lines.add(line(gui, mm, "hub.requirements.header", "<yellow>Requirements:"));
+        lines.add(line(gui, mm, "hub.requirements.separator", " <dark_gray>───────────────── "));
+        lines.add(line(gui, mm, "hub.requirements.header", " <yellow>Requirements: "));
 
         if (config.isCreationPermissionEnabled()) {
             boolean ok = player.hasPermission(config.getCreationPermissionNode());
             String path = ok ? "hub.requirements.permission-ok" : "hub.requirements.permission-fail";
             String def = ok
-                    ? "<green>✔ <gray>Permission"
-                    : "<red>✘ <gray>Permission <dark_gray>(<node>)";
+                    ? " <green>✔ <gray>Permission "
+                    : " <red>✘ <gray>Permission <dark_gray>(<node>) ";
             lines.add(line(gui, mm, path, def,
                     Placeholder.unparsed("node", config.getCreationPermissionNode())));
         }
@@ -115,14 +115,14 @@ public final class CreateEligibility {
             String formatted = service.economy().format(cost);
             String path = ok ? "hub.requirements.cost-ok" : "hub.requirements.cost-fail";
             String def = ok
-                    ? "<green>✔ <gray>Cost: <white><cost>"
-                    : "<red>✘ <gray>Cost: <white><cost>";
+                    ? " <green>✔ <gray>Cost: <white><cost> "
+                    : " <red>✘ <gray>Cost: <white><cost> ";
             lines.add(line(gui, mm, path, def, Placeholder.unparsed("cost", formatted)));
         }
 
         if (config.isCreationItemsEnabled()) {
-            String okPrefix = string(gui, "hub.requirements.item-ok-prefix", "<green>✔ ");
-            String failPrefix = string(gui, "hub.requirements.item-fail-prefix", "<red>✘ ");
+            String okPrefix = string(gui, "hub.requirements.item-ok-prefix", " <green>✔ ");
+            String failPrefix = string(gui, "hub.requirements.item-fail-prefix", " <red>✘ ");
             for (ItemRequirement req : config.getCreationItemRequirements()) {
                 Material mat = Material.matchMaterial(req.material());
                 if (mat == null || mat.isAir()) {
@@ -137,6 +137,7 @@ public final class CreateEligibility {
                 lines.add(Component.text()
                         .append(mm.deserialize(ok ? okPrefix : failPrefix))
                         .append(formatted)
+                        .append(Component.text(" "))
                         .build());
             }
         }
@@ -144,7 +145,7 @@ public final class CreateEligibility {
         if (!config.isCreationPermissionEnabled()
                 && !config.isCreationMoneyEnabled()
                 && !config.isCreationItemsEnabled()) {
-            lines.add(line(gui, mm, "hub.requirements.none", "<gray>None — free to create!"));
+            lines.add(line(gui, mm, "hub.requirements.none", " <gray>None: free to create! "));
         }
 
         return lines;

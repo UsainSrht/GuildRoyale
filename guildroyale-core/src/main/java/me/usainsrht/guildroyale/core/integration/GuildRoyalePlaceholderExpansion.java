@@ -28,8 +28,10 @@ import java.util.Optional;
  *   <li>{@code %guildroyale_top_level_<n>%} — level of the n-th guild on the leaderboard</li>
  * </ul>
  *
- * <p>All lookups against the guild service are <em>synchronous</em> using the in-memory
- * cache. Database round-trips are avoided.
+ * <p>{@code top_*} placeholders are served from the leaderboard cache. Per-player
+ * placeholders resolve the guild through the repository and therefore block; on a
+ * SQL backend that is a database round-trip, so avoid placing them in
+ * high-frequency contexts such as scoreboard or action-bar refresh loops.
  */
 public final class GuildRoyalePlaceholderExpansion extends PlaceholderExpansion {
 
@@ -56,9 +58,8 @@ public final class GuildRoyalePlaceholderExpansion extends PlaceholderExpansion 
             return resolveTop(params);
         }
 
-        // Per-player lookups — use the blocking join only for < 1ms in-memory lookup
         Optional<Guild> guildOpt = guildService.getGuildByMember(player.getUniqueId()).join();
-        if (guildOpt.isEmpty()) return params.startsWith("role") ? "" : "";
+        if (guildOpt.isEmpty()) return "";
 
         Guild guild = guildOpt.get();
         return switch (params) {

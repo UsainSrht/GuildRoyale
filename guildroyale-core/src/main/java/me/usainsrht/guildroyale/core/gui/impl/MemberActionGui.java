@@ -38,16 +38,16 @@ public final class MemberActionGui extends AbstractGui {
         this.guiManager = guiManager;
 
         GuiConfig gui = GuiItems.config();
-        this.headSlot = gui != null ? gui.slot("member-action.slots.head", 4) : 4;
-        this.kickSlot = gui != null ? gui.slot("member-action.slots.kick", 11) : 11;
-        this.promoteSlot = gui != null ? gui.slot("member-action.slots.promote", 13) : 13;
-        this.demoteSlot = gui != null ? gui.slot("member-action.slots.demote", 15) : 15;
-        this.backSlot = gui != null ? gui.slot("member-action.slots.back", 22) : 22;
+        this.headSlot = gui != null ? gui.slot("member-action.slots.head", 13) : 13;
+        this.kickSlot = gui != null ? gui.slot("member-action.slots.kick", 29) : 29;
+        this.promoteSlot = gui != null ? gui.slot("member-action.slots.promote", 31) : 31;
+        this.demoteSlot = gui != null ? gui.slot("member-action.slots.demote", 33) : 33;
+        this.backSlot = gui != null ? gui.slot("member-action.slots.back", 49) : 49;
     }
 
     private static int size() {
         GuiConfig gui = GuiItems.config();
-        return gui != null ? gui.size("member-action.size", 27) : 27;
+        return gui != null ? gui.size("member-action.size", 54) : 54;
     }
 
     private static Component title(GuildMember target) {
@@ -62,6 +62,8 @@ public final class MemberActionGui extends AbstractGui {
 
     @Override
     protected void build() {
+        fillBorder(GuiItems.filler());
+
         var offline = Bukkit.getOfflinePlayer(target.getPlayerId());
         String tName = offline.getName() != null ? offline.getName() : "Unknown";
 
@@ -82,14 +84,14 @@ public final class MemberActionGui extends AbstractGui {
             setSlot(demoteSlot, GuiItems.get("member-action-demote"));
         }
 
-        setSlot(backSlot, GuiItems.get("gui-back"));
+        setSlot(backSlot, navBackItem());
     }
 
     @Override
     public boolean onClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return true;
         if (event.getRawSlot() == backSlot) {
-            new GuildMembersGui(guild, viewer, guiManager, 0).open(player);
+            navigateBack(player);
         }
         return true;
     }

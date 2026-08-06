@@ -33,7 +33,7 @@ public final class EconomyProvider {
      */
     public static EconomyProvider load(Logger logger, String pluginName) {
         if (Bukkit.getPluginManager().getPlugin("Vault") == null
-                && Bukkit.getPluginManager().getPlugin("Vault") == null) {
+                && Bukkit.getPluginManager().getPlugin("VaultUnlocked") == null) {
             logger.info("VaultUnlocked/Vault not found — economy features disabled.");
             return new EconomyProvider(null, pluginName);
         }

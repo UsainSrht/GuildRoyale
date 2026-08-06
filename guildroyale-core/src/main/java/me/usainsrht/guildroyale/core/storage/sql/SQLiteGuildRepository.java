@@ -32,7 +32,24 @@ public final class SQLiteGuildRepository extends AbstractSqlRepository {
         config.setConnectionTestQuery("SELECT 1");
         config.addDataSourceProperty("journal_mode", "WAL");
         config.addDataSourceProperty("synchronous", "NORMAL");
+        // SQLite ignores ON DELETE CASCADE unless foreign keys are enabled per connection.
+        config.setConnectionInitSql("PRAGMA foreign_keys = ON");
         config.setPoolName("GuildRoyale-SQLite");
         return new HikariDataSource(config);
+    }
+
+    @Override
+    protected String keyText(int maxLength) {
+        return "TEXT";
+    }
+
+    @Override
+    protected String guildUpsertSuffix() {
+        return """
+            ON CONFLICT(id) DO UPDATE SET
+                name=excluded.name, shortname=excluded.shortname,
+                icon_mat=excluded.icon_mat, icon_data=excluded.icon_data,
+                level=excluded.level, xp=excluded.xp,
+                owned_badges=excluded.owned_badges, active_badge=excluded.active_badge""";
     }
 }

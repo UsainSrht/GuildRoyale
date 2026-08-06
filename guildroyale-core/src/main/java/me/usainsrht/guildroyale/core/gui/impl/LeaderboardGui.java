@@ -21,6 +21,9 @@ import java.util.List;
 /**
  * Shows the global guild leaderboard using {@link StandardListGui}.
  * Entries are loaded from {@link LeaderboardService}.
+ *
+ * <p>When opened from another GUI, set {@link #returnTo} so Back reopens it;
+ * when opened directly (e.g. {@code /guild leaderboard}), Back closes.
  */
 public final class LeaderboardGui extends StandardListGui<Guild> {
 
@@ -50,7 +53,7 @@ public final class LeaderboardGui extends StandardListGui<Guild> {
         if (gui == null) {
             return formatStandardTitle("Guild Leaderboard");
         }
-        return gui.title("leaderboard.title",
+        return gui.listTitle("leaderboard", safePage, maxPage,
                 Placeholder.unparsed("page", String.valueOf(safePage)),
                 Placeholder.unparsed("max_page", String.valueOf(maxPage)));
     }
@@ -97,38 +100,26 @@ public final class LeaderboardGui extends StandardListGui<Guild> {
     @Override
     protected void onPreviousPage(Player player) {
         if (page <= 0) return;
-        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
-        if (plugin != null) {
-            plugin.getScheduler().runAsync(() ->
-                    leaderboardService.getGlobalLeaderboard(page - 1, pageSize).thenAccept(guilds ->
-                            plugin.getScheduler().runForEntity(player, () -> {
-                                LeaderboardGui gui = new LeaderboardGui(guiManager, leaderboardService, page - 1);
-                                gui.setGuilds(guilds);
-                                gui.open(player);
-                            })
-                    )
-            );
-        }
+        openPage(player, page - 1);
     }
 
     @Override
     protected void onNextPage(Player player) {
-        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
-        if (plugin != null) {
-            plugin.getScheduler().runAsync(() ->
-                    leaderboardService.getGlobalLeaderboard(page + 1, pageSize).thenAccept(guilds ->
-                            plugin.getScheduler().runForEntity(player, () -> {
-                                LeaderboardGui gui = new LeaderboardGui(guiManager, leaderboardService, page + 1);
-                                gui.setGuilds(guilds);
-                                gui.open(player);
-                            })
-                    )
-            );
-        }
+        openPage(player, page + 1);
     }
 
-    @Override
-    protected void onBack(Player player) {
-        player.closeInventory();
+    private void openPage(Player player, int targetPage) {
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        if (plugin == null) return;
+        plugin.getScheduler().runAsync(() ->
+                leaderboardService.getGlobalLeaderboard(targetPage, pageSize).thenAccept(guilds ->
+                        plugin.getScheduler().runForEntity(player, () -> {
+                            LeaderboardGui gui = new LeaderboardGui(guiManager, leaderboardService, targetPage);
+                            gui.returnTo(this);
+                            gui.setGuilds(guilds);
+                            gui.open(player);
+                        })
+                )
+        );
     }
 }

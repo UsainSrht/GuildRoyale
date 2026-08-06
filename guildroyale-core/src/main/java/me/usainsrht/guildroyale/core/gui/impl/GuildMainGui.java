@@ -30,7 +30,6 @@ public final class GuildMainGui extends AbstractGui {
     private final int storageSlot;
     private final int bankSlot;
     private final int settingsSlot;
-    private final int disbandSlot;
     private final int iconSlot;
 
     public GuildMainGui(Guild guild, GuildMember viewer, GuiManager guiManager) {
@@ -40,20 +39,19 @@ public final class GuildMainGui extends AbstractGui {
         this.guiManager = guiManager;
 
         GuiConfig gui = GuiItems.config();
-        this.iconSlot = gui != null ? gui.slot("main.slots.icon", 4) : 4;
-        this.infoSlot = gui != null ? gui.slot("main.slots.info", 10) : 10;
-        this.membersSlot = gui != null ? gui.slot("main.slots.members", 11) : 11;
-        this.rolesSlot = gui != null ? gui.slot("main.slots.roles", 12) : 12;
-        this.leaderboardSlot = gui != null ? gui.slot("main.slots.leaderboard", 13) : 13;
-        this.storageSlot = gui != null ? gui.slot("main.slots.storage", 14) : 14;
-        this.bankSlot = gui != null ? gui.slot("main.slots.bank", 15) : 15;
-        this.settingsSlot = gui != null ? gui.slot("main.slots.settings", 16) : 16;
-        this.disbandSlot = gui != null ? gui.slot("main.slots.disband", 22) : 22;
+        this.iconSlot = gui != null ? gui.slot("main.slots.icon", 13) : 13;
+        this.infoSlot = gui != null ? gui.slot("main.slots.info", 20) : 20;
+        this.membersSlot = gui != null ? gui.slot("main.slots.members", 22) : 22;
+        this.rolesSlot = gui != null ? gui.slot("main.slots.roles", 24) : 24;
+        this.leaderboardSlot = gui != null ? gui.slot("main.slots.leaderboard", 29) : 29;
+        this.storageSlot = gui != null ? gui.slot("main.slots.storage", 31) : 31;
+        this.bankSlot = gui != null ? gui.slot("main.slots.bank", 33) : 33;
+        this.settingsSlot = gui != null ? gui.slot("main.slots.settings", 40) : 40;
     }
 
     private static int size() {
         GuiConfig gui = GuiItems.config();
-        return gui != null ? gui.size("main.size", 27) : 27;
+        return gui != null ? gui.size("main.size", 54) : 54;
     }
 
     private static net.kyori.adventure.text.Component title(Guild guild) {
@@ -80,7 +78,6 @@ public final class GuildMainGui extends AbstractGui {
         setSlot(storageSlot, GuiItems.get("main-storage"));
         setSlot(bankSlot, GuiItems.get("main-bank"));
         setSlot(settingsSlot, GuiItems.get("main-settings"));
-        setSlot(disbandSlot, GuiItems.get("main-disband"));
     }
 
     @Override
@@ -90,11 +87,17 @@ public final class GuildMainGui extends AbstractGui {
         int slot = event.getRawSlot();
 
         if (slot == infoSlot) {
-            new GuildInfoGui(guild, guiManager).open(player);
+            new GuildInfoGui(guild, guiManager)
+                    .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))
+                    .open(player);
         } else if (slot == membersSlot) {
-            new GuildMembersGui(guild, viewer, guiManager, 0).open(player);
+            new GuildMembersGui(guild, viewer, guiManager, 0)
+                    .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))
+                    .open(player);
         } else if (slot == rolesSlot) {
-            new RoleManagementGui(guild, viewer, guiManager).open(player);
+            new RoleManagementGui(guild, viewer, guiManager)
+                    .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))
+                    .open(player);
         } else if (slot == leaderboardSlot) {
             if (plugin == null) return true;
             int pageSize = plugin.getConfigManager().getLeaderboardPageSize();
@@ -102,6 +105,7 @@ public final class GuildMainGui extends AbstractGui {
                     plugin.getLeaderboardService().getGlobalLeaderboard(0, pageSize).thenAccept(guilds ->
                             plugin.getScheduler().runForEntity(player, () -> {
                                 LeaderboardGui gui = new LeaderboardGui(guiManager, plugin.getLeaderboardService(), 0);
+                                gui.returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p));
                                 gui.setGuilds(guilds);
                                 gui.open(player);
                             })
@@ -114,13 +118,9 @@ public final class GuildMainGui extends AbstractGui {
             player.closeInventory();
             BankSubcommand.showBalance(player);
         } else if (slot == settingsSlot) {
-            if (plugin != null) {
-                plugin.getMessages().send(player, "gui-settings-hint");
-            }
-        } else if (slot == disbandSlot) {
-            if (plugin != null) {
-                plugin.getMessages().send(player, "gui-disband-hint");
-            }
+            new GuildSettingsGui(guild, viewer, guiManager)
+                    .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))
+                    .open(player);
         }
         return true;
     }

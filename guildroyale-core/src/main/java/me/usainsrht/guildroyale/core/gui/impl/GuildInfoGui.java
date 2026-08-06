@@ -11,6 +11,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -42,13 +43,13 @@ public final class GuildInfoGui extends AbstractGui {
         this.guiManager = guiManager;
 
         GuiConfig gui = GuiItems.config();
-        this.infoSlot = gui != null ? gui.slot("info.slots.info", 13) : 13;
-        this.backSlot = gui != null ? gui.slot("info.slots.back", 22) : 22;
+        this.infoSlot = gui != null ? gui.slot("info.slots.info", 22) : 22;
+        this.backSlot = gui != null ? gui.slot("info.slots.back", 49) : 49;
     }
 
     private static int size() {
         GuiConfig gui = GuiItems.config();
-        return gui != null ? gui.size("info.size", 27) : 27;
+        return gui != null ? gui.size("info.size", 54) : 54;
     }
 
     private static Component title(Guild guild) {
@@ -82,7 +83,7 @@ public final class GuildInfoGui extends AbstractGui {
         }
 
         setSlot(infoSlot, infoItem);
-        setSlot(backSlot, GuiItems.get("gui-back"));
+        setSlot(backSlot, navBackItem());
     }
 
     private void appendBadgeLine(ItemStack infoItem) {
@@ -94,15 +95,22 @@ public final class GuildInfoGui extends AbstractGui {
                 : guild.getActiveBadgeId();
 
         String template = gui != null
-                ? gui.string("info.badge-line", "<gray>Badge: <badge>")
-                : "<gray>Badge: <badge>";
+                ? gui.string("info.badge-line", " <gray>Badge: <badge> ")
+                : " <gray>Badge: <badge> ";
 
         ItemMeta meta = infoItem.getItemMeta();
         if (meta == null) return;
         List<Component> lore = meta.lore() != null ? new ArrayList<>(meta.lore()) : new ArrayList<>();
-        lore.add(MiniMessage.miniMessage()
+        Component badgeLine = MiniMessage.miniMessage()
                 .deserialize(template, Placeholder.component("badge", MiniMessage.miniMessage().deserialize(display)))
-                .decoration(TextDecoration.ITALIC, false));
+                .decoration(TextDecoration.ITALIC, false);
+        // Keep the trailing empty lore line at the end.
+        if (!lore.isEmpty() && PlainTextComponentSerializer.plainText().serialize(lore.get(lore.size() - 1)).isEmpty()) {
+            lore.add(lore.size() - 1, badgeLine);
+        } else {
+            lore.add(badgeLine);
+            lore.add(Component.empty());
+        }
         meta.lore(lore);
         infoItem.setItemMeta(meta);
     }
@@ -111,14 +119,7 @@ public final class GuildInfoGui extends AbstractGui {
     public boolean onClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return true;
         if (event.getRawSlot() == backSlot) {
-            GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
-            if (plugin == null) return true;
-            var memberOpt = guild.getMember(player.getUniqueId());
-            if (memberOpt.isPresent()) {
-                new GuildMainGui(guild, memberOpt.get(), guiManager).open(player);
-            } else {
-                player.closeInventory();
-            }
+            navigateBack(player);
         }
         return true;
     }

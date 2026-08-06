@@ -9,7 +9,6 @@ import me.usainsrht.guildroyale.core.scheduler.FoliaScheduler;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -22,7 +21,8 @@ public final class LeaderboardServiceImpl implements LeaderboardService {
     private final GuildRepository repo;
     private final ConfigManager config;
     private final FoliaScheduler scheduler;
-    private final CopyOnWriteArrayList<Guild> cache = new CopyOnWriteArrayList<>();
+    /** Replaced wholesale on refresh so readers never observe a half-filled list. */
+    private volatile List<Guild> cache = List.of();
 
     public LeaderboardServiceImpl(GuildRepository repo, ConfigManager config, FoliaScheduler scheduler) {
         this.repo = repo;
@@ -33,7 +33,7 @@ public final class LeaderboardServiceImpl implements LeaderboardService {
     /** Starts the background cache-refresh task. Call once from plugin onEnable. */
     public void startRefreshTask() {
         long period = config.getLeaderboardCacheRefreshSeconds();
-        scheduler.scheduleAsyncRepeating(this::refreshCacheSync, 0L, period, TimeUnit.SECONDS);
+        scheduler.scheduleAsyncRepeating(this::refreshCache, 0L, period, TimeUnit.SECONDS);
     }
 
     // ── Interface ─────────────────────────────────────────────────────────────
@@ -49,8 +49,8 @@ public final class LeaderboardServiceImpl implements LeaderboardService {
 
     @Override
     public List<Guild> getCachedLeaderboard(int limit) {
-        List<Guild> snap = cache;
-        return Collections.unmodifiableList(snap.subList(0, Math.min(limit, snap.size())));
+        List<Guild> snapshot = cache;
+        return snapshot.subList(0, Math.min(Math.max(limit, 0), snapshot.size()));
     }
 
     @Override
@@ -65,15 +65,13 @@ public final class LeaderboardServiceImpl implements LeaderboardService {
 
     @Override
     public void invalidateCache() {
-        scheduler.runAsync(this::refreshCacheSync);
+        scheduler.runAsync(this::refreshCache);
     }
 
     // ── Internal ──────────────────────────────────────────────────────────────
 
-    private void refreshCacheSync() {
-        repo.getLeaderboard(CACHE_LIMIT).thenAccept(result -> {
-            cache.clear();
-            cache.addAll(result);
-        });
+    private void refreshCache() {
+        repo.getLeaderboard(CACHE_LIMIT)
+                .thenAccept(result -> cache = List.copyOf(result));
     }
 }

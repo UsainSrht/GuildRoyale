@@ -8,18 +8,25 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Consumer;
 
 /**
  * Base class for all GuildRoyale GUIs.
  *
  * <p>Subclasses implement {@link #build()} to populate items and
  * {@link #onClick(InventoryClickEvent)} to handle clicks.
+ *
+ * <p>Optional {@linkplain #returnTo(Consumer) return navigation} records whether this
+ * GUI was opened from another menu (back) or directly (close).
  */
 public abstract class AbstractGui implements InventoryHolder {
 
     protected final int size;
     protected final Component title;
     protected Inventory inventory;
+    private @Nullable Consumer<Player> returnTo;
 
     protected AbstractGui(int size, Component title) {
         this.size = size;
@@ -42,6 +49,42 @@ public abstract class AbstractGui implements InventoryHolder {
     public abstract boolean onClick(InventoryClickEvent event);
 
     public void onClose(Player player) {}
+
+    /**
+     * Sets where Back should go. {@code null} means this GUI was opened directly
+     * (e.g. via command) and Back should close the inventory instead.
+     *
+     * @return {@code this} for chaining before {@link #open(Player)}
+     */
+    public AbstractGui returnTo(@Nullable Consumer<Player> returnTo) {
+        this.returnTo = returnTo;
+        return this;
+    }
+
+    /** Copies return navigation from another GUI (e.g. when changing pages). */
+    public AbstractGui returnTo(@Nullable AbstractGui from) {
+        this.returnTo = from != null ? from.returnTo : null;
+        return this;
+    }
+
+    /** Whether a previous GUI should be reopened on Back. */
+    protected boolean hasReturn() {
+        return returnTo != null;
+    }
+
+    /** Reopens the previous GUI, or closes if this was opened directly. */
+    protected void navigateBack(Player player) {
+        if (returnTo != null) {
+            returnTo.accept(player);
+        } else {
+            player.closeInventory();
+        }
+    }
+
+    /** Back arrow when nested; close barrier when opened directly. */
+    protected ItemStack navBackItem() {
+        return GuiItems.get(hasReturn() ? "gui-back" : "gui-close");
+    }
 
     public void open(Player player) {
         this.inventory = Bukkit.createInventory(this, size, title);

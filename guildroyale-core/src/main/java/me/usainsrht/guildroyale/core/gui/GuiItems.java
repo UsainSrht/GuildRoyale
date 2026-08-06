@@ -6,6 +6,7 @@ import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -15,6 +16,8 @@ import java.util.List;
 
 /** Helpers for loading YamlItem GUI buttons. */
 public final class GuiItems {
+
+    private static final PlainTextComponentSerializer PLAIN = PlainTextComponentSerializer.plainText();
 
     private GuiItems() {}
 
@@ -41,7 +44,7 @@ public final class GuiItems {
         return gui.item(key, resolvers);
     }
 
-    /** Clone with extra lore lines appended. */
+    /** Clone with extra lore lines inserted before a trailing empty line when present. */
     public static ItemStack withExtraLore(String key, @Nullable List<Component> extraLore) {
         ItemStack item = get(key);
         if (extraLore == null || extraLore.isEmpty()) {
@@ -52,7 +55,11 @@ public final class GuiItems {
         if (existing != null) {
             lore.addAll(existing.lines());
         }
-        lore.addAll(extraLore);
+        int insertAt = lore.size();
+        if (insertAt > 0 && isBlankLine(lore.get(insertAt - 1))) {
+            insertAt--;
+        }
+        lore.addAll(insertAt, extraLore);
         item.setData(DataComponentTypes.LORE, ItemLore.lore(lore));
         return item;
     }
@@ -67,5 +74,9 @@ public final class GuiItems {
 
     public static ItemStack innerFiller() {
         return get("gui-inner-filler");
+    }
+
+    private static boolean isBlankLine(Component component) {
+        return PLAIN.serialize(component).isEmpty();
     }
 }
