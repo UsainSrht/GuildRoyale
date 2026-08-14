@@ -4,12 +4,13 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import me.usainsrht.guildroyale.api.domain.GuildMember;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.config.CommandConfig;
-import me.usainsrht.guildroyale.core.gui.impl.GuildInfoGui;
+import me.usainsrht.guildroyale.core.gui.impl.GuildMainGui;
 import org.bukkit.entity.Player;
 
-/** {@code /guild info} — opens the guild info GUI. */
+/** {@code /guild info} — opens the main guild menu (info is shown on the info icon lore). */
 @SuppressWarnings("UnstableApiUsage")
 public final class InfoSubcommand {
 
@@ -33,7 +34,13 @@ public final class InfoSubcommand {
                                 plugin.getMessages().send(player, "not-in-guild");
                                 return;
                             }
-                            new GuildInfoGui(opt.get(), plugin.getGuiManager()).open(player);
+                            var guild = opt.get();
+                            GuildMember viewer = guild.getMember(player.getUniqueId()).orElse(null);
+                            if (viewer == null) {
+                                plugin.getMessages().send(player, "not-in-guild");
+                                return;
+                            }
+                            new GuildMainGui(guild, viewer, plugin.getGuiManager()).open(player);
                         })
                 )
         );

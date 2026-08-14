@@ -113,6 +113,15 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- MiniPlaceholders v3 — optional integration -->
+        <dependency>
+            <groupId>io.github.miniplaceholders</groupId>
+            <artifactId>miniplaceholders-api</artifactId>
+            <version>3.2.0</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+
         <!-- VaultUnlockedAPI — economy integration (guild bank accounts) -->
         <dependency>
             <groupId>net.milkbowl.vault</groupId>

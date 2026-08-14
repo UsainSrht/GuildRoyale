@@ -23,13 +23,20 @@ public final class GuildRole {
     private final int index;
     private final Set<GuildPermissionKey> permissions;
     private SerializableItemStack icon;
+    private RoleColor color;
 
     public GuildRole(String name, int index, Set<GuildPermissionKey> permissions, SerializableItemStack icon) {
+        this(name, index, permissions, icon, RoleColor.WHITE);
+    }
+
+    public GuildRole(String name, int index, Set<GuildPermissionKey> permissions,
+                     SerializableItemStack icon, RoleColor color) {
         this.name = Objects.requireNonNull(name, "name");
         if (index < 0) throw new IllegalArgumentException("Role index must be >= 0");
         this.index = index;
         this.permissions = new HashSet<>(Objects.requireNonNull(permissions, "permissions"));
         this.icon = icon != null ? icon : SerializableItemStack.EMPTY;
+        this.color = color != null ? color : RoleColor.WHITE;
     }
 
     public String getName() { return name; }
@@ -53,9 +60,13 @@ public final class GuildRole {
     public SerializableItemStack getIcon() { return icon; }
     public void setIcon(SerializableItemStack icon) { this.icon = icon != null ? icon : SerializableItemStack.EMPTY; }
 
+    public RoleColor getColor() { return color; }
+    public void setColor(RoleColor color) { this.color = color != null ? color : RoleColor.WHITE; }
+
     /** Default Leader role with all permissions. */
     public static GuildRole createLeader() {
-        return new GuildRole("Leader", 0, EnumSet.allOf(GuildPermissionKey.class), SerializableItemStack.EMPTY);
+        return new GuildRole("Leader", 0, EnumSet.allOf(GuildPermissionKey.class),
+                SerializableItemStack.EMPTY, RoleColor.YELLOW);
     }
 
     /** Default Co-Leader role. */
@@ -72,7 +83,7 @@ public final class GuildRole {
                 GuildPermissionKey.BANK_VIEW,
                 GuildPermissionKey.BANK_DEPOSIT,
                 GuildPermissionKey.BANK_WITHDRAW
-        ), SerializableItemStack.EMPTY);
+        ), SerializableItemStack.EMPTY, RoleColor.ORANGE);
     }
 
     /** Default Helper role. */
@@ -82,12 +93,13 @@ public final class GuildRole {
                 GuildPermissionKey.STORAGE_ACCESS,
                 GuildPermissionKey.BANK_VIEW,
                 GuildPermissionKey.BANK_DEPOSIT
-        ), SerializableItemStack.EMPTY);
+        ), SerializableItemStack.EMPTY, RoleColor.LIME);
     }
 
     /** Default Member role with no special permissions. */
     public static GuildRole createMember() {
-        return new GuildRole("Member", 3, EnumSet.noneOf(GuildPermissionKey.class), SerializableItemStack.EMPTY);
+        return new GuildRole("Member", 3, EnumSet.noneOf(GuildPermissionKey.class),
+                SerializableItemStack.EMPTY, RoleColor.GRAY);
     }
 
     @Override

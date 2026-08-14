@@ -4,6 +4,8 @@ import me.usainsrht.guildroyale.api.domain.Guild;
 import me.usainsrht.guildroyale.api.domain.GuildMember;
 import me.usainsrht.guildroyale.api.domain.GuildRole;
 import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
+import me.usainsrht.guildroyale.api.service.ActionResult;
+import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.adapter.ItemStackAdapter;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.gui.GuiItems;
@@ -11,6 +13,7 @@ import me.usainsrht.guildroyale.core.gui.GuiManager;
 import me.usainsrht.guildroyale.core.gui.StandardListGui;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
@@ -20,13 +23,15 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * Lists all roles in the guild using {@link StandardListGui}. Clicking a role opens {@link RoleEditorGui}.
+ * Lists all roles in the guild. Clicking a role opens {@link RoleEditorGui}.
+ * Top action opens {@link PermissionsGui}.
  */
 public final class RoleManagementGui extends StandardListGui<GuildRole> {
 
     private final Guild guild;
     private final GuildMember viewer;
     private final GuiManager guiManager;
+    private final boolean canManage;
 
     public RoleManagementGui(Guild guild, GuildMember viewer, GuiManager guiManager) {
         this(guild, viewer, guiManager, 0);
@@ -37,6 +42,8 @@ public final class RoleManagementGui extends StandardListGui<GuildRole> {
         this.guild = guild;
         this.viewer = viewer;
         this.guiManager = guiManager;
+        this.canManage = viewer.getRole().getIndex() == 0
+                || viewer.getRole().hasPermission(GuildPermissionKey.ROLE_MANAGEMENT);
     }
 
     private static List<GuildRole> getSortedRoles(Guild guild) {
@@ -68,19 +75,27 @@ public final class RoleManagementGui extends StandardListGui<GuildRole> {
     @Override
     protected ItemStack renderItem(GuildRole role, int index) {
         ItemStack icon = ItemStackAdapter.fromSerializable(role.getIcon());
+        long members = guild.getMembers().stream()
+                .filter(m -> m.getRole().getIndex() == role.getIndex())
+                .count();
         ItemStack template = GuiItems.get("roles-entry",
                 Placeholder.unparsed("role", role.getName()),
                 Placeholder.unparsed("index", String.valueOf(role.getIndex())),
-                Placeholder.unparsed("permissions", String.valueOf(role.getPermissions().size())));
+                Placeholder.unparsed("members", String.valueOf(members)),
+                Placeholder.unparsed("color", role.getColor().name()));
         if (icon.getType().isAir()) {
-            icon = template;
-        } else {
-            ItemMeta meta = template.getItemMeta();
-            if (meta != null) {
-                icon.setItemMeta(meta);
+            Material dye = Material.matchMaterial(role.getColor().dyeMaterial());
+            if (dye != null) {
+                icon = new ItemStack(dye);
+            } else {
+                icon = template;
             }
         }
-        return icon;
+        ItemMeta meta = template.getItemMeta();
+        if (meta != null && icon != template) {
+            icon.setItemMeta(meta);
+        }
+        return icon == template ? template : icon;
     }
 
     @Override
@@ -96,14 +111,53 @@ public final class RoleManagementGui extends StandardListGui<GuildRole> {
 
     @Override
     protected @Nullable ItemStack getAction1Item() {
-        boolean canManage = viewer.getRole().getIndex() == 0
-                || viewer.getRole().hasPermission(GuildPermissionKey.ROLE_MANAGEMENT);
         return canManage ? GuiItems.get("roles-create") : null;
     }
 
     @Override
+    protected @Nullable ItemStack getTopActionItem() {
+        return GuiItems.get("roles-permissions");
+    }
+
+    @Override
     protected void onAction1(Player player) {
-        // Create new role trigger/dialog
+        if (!canManage) return;
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        if (plugin == null) return;
+
+        player.closeInventory();
+        plugin.getDialogManager().openRoleNameDialog(player, "Enter a name for the new role", name ->
+                plugin.getScheduler().runAsync(() ->
+                        plugin.getRoleService().createRole(guild.getId(), player.getUniqueId(), name)
+                                .thenCompose(result -> plugin.getGuildService().getGuild(guild.getId())
+                                        .thenAccept(opt -> plugin.getScheduler().runForEntity(player, () -> {
+                                            switch (result) {
+                                                case ActionResult.Success s -> {
+                                                    plugin.getMessages().send(player, "role-created",
+                                                            Placeholder.unparsed("role", name));
+                                                    if (opt.isPresent()) {
+                                                        Guild fresh = opt.get();
+                                                        GuildMember freshViewer = fresh.getMember(viewer.getPlayerId()).orElse(viewer);
+                                                        new RoleManagementGui(fresh, freshViewer, guiManager, page)
+                                                                .returnTo(this)
+                                                                .open(player);
+                                                    }
+                                                }
+                                                case ActionResult.Failure f ->
+                                                        plugin.getMessages().send(player, f.reason());
+                                            }
+                                        })))
+                )
+        );
+    }
+
+    @Override
+    protected void onTopAction(Player player) {
+        new PermissionsGui(guild, viewer, guiManager)
+                .returnTo(p -> new RoleManagementGui(guild, viewer, guiManager, page)
+                        .returnTo(this)
+                        .open(p))
+                .open(player);
     }
 
     @Override

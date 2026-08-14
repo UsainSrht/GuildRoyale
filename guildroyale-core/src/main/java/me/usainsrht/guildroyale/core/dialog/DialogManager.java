@@ -12,9 +12,9 @@ import io.papermc.paper.registry.data.dialog.type.DialogType;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.feature.GuildFeature;
+import me.usainsrht.guildroyale.core.message.Text;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickCallback;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.entity.Player;
@@ -36,8 +36,6 @@ import java.util.function.Consumer;
 @SuppressWarnings("UnstableApiUsage")
 public final class DialogManager {
 
-    private static final MiniMessage MM = MiniMessage.miniMessage();
-
     private static final ClickCallback.Options SINGLE_USE = ClickCallback.Options.builder()
             .uses(1)
             .lifetime(Duration.ofMinutes(5))
@@ -58,94 +56,100 @@ public final class DialogManager {
         GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
         boolean askShortname = plugin == null || plugin.getConfigManager().getFeatureUnlockLevel(GuildFeature.SHORTNAME) <= 1;
 
-        Component bodyText = askShortname
-                ? text("dialogs.create.body", "<gray>Choose a <white>name</white> (3-32 chars) and a <white>shortname</white> (2-6 alphanumeric).")
-                : text("dialogs.create.body-no-shortname", "<gray>Choose a <white>name</white> (3-32 chars).");
+        try (Text.Scope ignored = Text.push(player)) {
+            Component bodyText = askShortname
+                    ? text(player, "dialogs.create.body", "<gray>Choose a <white>name</white> (3-32 chars) and a <white>shortname</white> (2-6 alphanumeric).")
+                    : text(player, "dialogs.create.body-no-shortname", "<gray>Choose a <white>name</white> (3-32 chars).");
 
-        List<DialogInput> inputs = new ArrayList<>();
-        inputs.add(DialogInput.text("guild_name", 200,
-                text("dialogs.create.name-label", "<yellow>Guild Name"), true, "", 32, null));
-        if (askShortname) {
-            inputs.add(DialogInput.text("guild_shortname", 200,
-                    text("dialogs.create.shortname-label", "<yellow>Shortname"), true, "", 6, null));
+            List<DialogInput> inputs = new ArrayList<>();
+            inputs.add(DialogInput.text("guild_name", 200,
+                    text(player, "dialogs.create.name-label", "<yellow>Guild Name"), true, "", 32, null));
+            if (askShortname) {
+                inputs.add(DialogInput.text("guild_shortname", 200,
+                        text(player, "dialogs.create.shortname-label", "<yellow>Shortname"), true, "", 6, null));
+            }
+
+            DialogBase base = DialogBase.create(
+                    text(player, "dialogs.create.title", "<gold><bold>Create a Guild"),
+                    null,
+                    true,
+                    false,
+                    DialogBase.DialogAfterAction.CLOSE,
+                    List.of(DialogBody.plainMessage(bodyText)),
+                    inputs
+            );
+
+            DialogAction action = DialogAction.customClick(
+                    (DialogActionCallback) (response, audience) -> {
+                        String name = textOrEmpty(response, "guild_name");
+                        String shortname = askShortname ? textOrEmpty(response, "guild_shortname") : "";
+                        if (!name.isEmpty() && (!askShortname || !shortname.isEmpty())) {
+                            callback.accept(new String[]{name, shortname});
+                        }
+                    },
+                    SINGLE_USE
+            );
+
+            openSingleActionDialog(player, base,
+                    text(player, "dialogs.create.submit", "<green>Create Guild"), action);
         }
-
-        DialogBase base = DialogBase.create(
-                text("dialogs.create.title", "<gold><bold>Create a Guild"),
-                null,
-                true,
-                false,
-                DialogBase.DialogAfterAction.CLOSE,
-                List.of(DialogBody.plainMessage(bodyText)),
-                inputs
-        );
-
-        DialogAction action = DialogAction.customClick(
-                (DialogActionCallback) (response, audience) -> {
-                    String name = textOrEmpty(response, "guild_name");
-                    String shortname = askShortname ? textOrEmpty(response, "guild_shortname") : "";
-                    if (!name.isEmpty() && (!askShortname || !shortname.isEmpty())) {
-                        callback.accept(new String[]{name, shortname});
-                    }
-                },
-                SINGLE_USE
-        );
-
-        openSingleActionDialog(player, base,
-                text("dialogs.create.submit", "<green>Create Guild"), action);
     }
 
     public void openShortnameDialog(Player player, Consumer<String> callback) {
-        DialogBase base = DialogBase.create(
-                text("dialogs.shortname.title", "<gold>Change Shortname"),
-                null,
-                true,
-                false,
-                DialogBase.DialogAfterAction.CLOSE,
-                List.of(DialogBody.plainMessage(text(
-                        "dialogs.shortname.body",
-                        "<gray>Enter a new shortname <dark_gray>(2-6 alphanumeric)."))),
-                List.of(DialogInput.text("shortname", 200,
-                        text("dialogs.shortname.input-label", "<yellow>New Shortname"), true, "", 6, null))
-        );
+        try (Text.Scope ignored = Text.push(player)) {
+            DialogBase base = DialogBase.create(
+                    text(player, "dialogs.shortname.title", "<gold>Change Shortname"),
+                    null,
+                    true,
+                    false,
+                    DialogBase.DialogAfterAction.CLOSE,
+                    List.of(DialogBody.plainMessage(text(player,
+                            "dialogs.shortname.body",
+                            "<gray>Enter a new shortname <dark_gray>(2-6 alphanumeric)."))),
+                    List.of(DialogInput.text("shortname", 200,
+                            text(player, "dialogs.shortname.input-label", "<yellow>New Shortname"), true, "", 6, null))
+            );
 
-        DialogAction action = DialogAction.customClick(
-                (DialogActionCallback) (response, audience) -> {
-                    String value = textOrEmpty(response, "shortname");
-                    if (!value.isEmpty()) callback.accept(value);
-                },
-                SINGLE_USE
-        );
+            DialogAction action = DialogAction.customClick(
+                    (DialogActionCallback) (response, audience) -> {
+                        String value = textOrEmpty(response, "shortname");
+                        if (!value.isEmpty()) callback.accept(value);
+                    },
+                    SINGLE_USE
+            );
 
-        openSingleActionDialog(player, base,
-                text("dialogs.shortname.submit", "<green>Change"), action);
+            openSingleActionDialog(player, base,
+                    text(player, "dialogs.shortname.submit", "<green>Change"), action);
+        }
     }
 
     public void openRoleNameDialog(Player player, String prompt, Consumer<String> callback) {
-        DialogBase base = DialogBase.create(
-                text("dialogs.role-name.title", "<gold>Role Name"),
-                null,
-                true,
-                false,
-                DialogBase.DialogAfterAction.CLOSE,
-                List.of(DialogBody.plainMessage(text(
-                        "dialogs.role-name.body",
-                        "<gray><prompt>",
-                        Placeholder.unparsed("prompt", prompt)))),
-                List.of(DialogInput.text("role_name", 200,
-                        text("dialogs.role-name.input-label", "<yellow>Role Name"), true, "", 20, null))
-        );
+        try (Text.Scope ignored = Text.push(player)) {
+            DialogBase base = DialogBase.create(
+                    text(player, "dialogs.role-name.title", "<gold>Role Name"),
+                    null,
+                    true,
+                    false,
+                    DialogBase.DialogAfterAction.CLOSE,
+                    List.of(DialogBody.plainMessage(text(player,
+                            "dialogs.role-name.body",
+                            "<gray><prompt>",
+                            Placeholder.unparsed("prompt", prompt)))),
+                    List.of(DialogInput.text("role_name", 200,
+                            text(player, "dialogs.role-name.input-label", "<yellow>Role Name"), true, "", 20, null))
+            );
 
-        DialogAction action = DialogAction.customClick(
-                (DialogActionCallback) (response, audience) -> {
-                    String value = textOrEmpty(response, "role_name");
-                    if (!value.isEmpty()) callback.accept(value);
-                },
-                SINGLE_USE
-        );
+            DialogAction action = DialogAction.customClick(
+                    (DialogActionCallback) (response, audience) -> {
+                        String value = textOrEmpty(response, "role_name");
+                        if (!value.isEmpty()) callback.accept(value);
+                    },
+                    SINGLE_USE
+            );
 
-        openSingleActionDialog(player, base,
-                text("dialogs.role-name.submit", "<green>Confirm"), action);
+            openSingleActionDialog(player, base,
+                    text(player, "dialogs.role-name.submit", "<green>Confirm"), action);
+        }
     }
 
     private static void openSingleActionDialog(Player player, DialogBase base,
@@ -156,12 +160,12 @@ public final class DialogManager {
         player.showDialog(dialog);
     }
 
-    private static Component text(String path, String def, TagResolver... resolvers) {
+    private static Component text(Player player, String path, String def, TagResolver... resolvers) {
         GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
         GuiConfig gui = plugin != null ? plugin.getGuiConfig() : null;
         if (gui == null) {
-            return MM.deserialize(def, resolvers);
+            return Text.parse(def, player, resolvers);
         }
-        return gui.component(path, def, resolvers);
+        return gui.component(player, path, def, resolvers);
     }
 }

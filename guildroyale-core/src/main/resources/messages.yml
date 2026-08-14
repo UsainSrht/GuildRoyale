@@ -112,7 +112,10 @@ role-changed-self: "<yellow>Your role has been changed to <gold><role></gold>."
 role-index-invalid: "<red>Role index must be between 1 and the number of roles."
 role-max-reached: "<red>Maximum number of roles reached."
 role-leader-protected: "<red>The leader role cannot be modified this way."
+role-color-updated: "<green>Role color set to <gold><color></gold>."
+role-color-invalid: "<red>Invalid role color."
 permission-toggled: "<green>Permission toggled for role <gold><role></gold>."
+permission-invalid: "<red>Invalid permission."
 role-usage: "<red>Usage: <yellow>/<cmd> <sub> <create|delete|rename|setpermission>"
 
 # ── Icon ──────────────────────────────────────────────────────────

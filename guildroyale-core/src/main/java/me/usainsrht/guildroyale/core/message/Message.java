@@ -4,7 +4,6 @@ import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.title.Title;
 import org.bukkit.configuration.ConfigurationSection;
@@ -41,8 +40,6 @@ import java.util.Objects;
  * </pre>
  */
 public final class Message {
-
-    private static final MiniMessage MM = MiniMessage.miniMessage();
 
     private final @Nullable List<String> chat;
     private final @Nullable List<SoundEntry> sounds;
@@ -319,27 +316,24 @@ public final class Message {
      */
     public void send(Audience audience, @Nullable String prefix, TagResolver... resolvers) {
         Objects.requireNonNull(audience, "audience");
-        TagResolver resolver = resolvers.length == 0
-                ? TagResolver.empty()
-                : TagResolver.resolver(resolvers);
 
         if (chat != null) {
             for (String line : chat) {
                 String raw = (prefix != null && !prefix.isEmpty()) ? prefix + line : line;
-                audience.sendMessage(MM.deserialize(raw, resolver));
+                audience.sendMessage(Text.parse(raw, audience, resolvers));
             }
         }
 
         if (actionbar != null) {
-            audience.sendActionBar(MM.deserialize(actionbar, resolver));
+            audience.sendActionBar(Text.parse(actionbar, audience, resolvers));
         }
 
         if (title != null) {
             Component main = title.title() != null
-                    ? MM.deserialize(title.title(), resolver)
+                    ? Text.parse(title.title(), audience, resolvers)
                     : Component.empty();
             Component sub = title.subtitle() != null
-                    ? MM.deserialize(title.subtitle(), resolver)
+                    ? Text.parse(title.subtitle(), audience, resolvers)
                     : Component.empty();
             Title.Times times = Title.Times.times(
                     Duration.ofMillis(title.fadeIn() * 50L),
@@ -352,10 +346,8 @@ public final class Message {
         if (sounds != null) {
             for (SoundEntry entry : sounds) {
                 try {
-                    String rawSound = entry.sound().trim().toLowerCase(Locale.ROOT).replace(' ', '_');
-                    Key key = rawSound.contains(":")
-                            ? Key.key(rawSound)
-                            : Key.key("minecraft", rawSound.replace('_', '.'));
+                    String rawSound = entry.sound().trim().toLowerCase(Locale.ROOT);
+                    Key key = Key.key(rawSound);
                     Sound.Source source = entry.source() != null ? entry.source() : Sound.Source.MASTER;
                     audience.playSound(Sound.sound(key, source, entry.volume(), entry.pitch()));
                 } catch (Exception ignored) {
@@ -365,15 +357,19 @@ public final class Message {
         }
     }
 
-    /** Deserializes the first chat line (or empty) — useful for rare Component-only APIs. */
+    /**
+     * Deserializes the first chat line (or empty) — useful for rare Component-only APIs.
+     * Prefer {@link #firstChatComponent(Audience, TagResolver...)} when an audience is available.
+     */
     public Component firstChatComponent(TagResolver... resolvers) {
+        return firstChatComponent(null, resolvers);
+    }
+
+    public Component firstChatComponent(@Nullable Audience audience, TagResolver... resolvers) {
         if (chat == null || chat.isEmpty()) {
             return Component.empty();
         }
-        TagResolver resolver = resolvers.length == 0
-                ? TagResolver.empty()
-                : TagResolver.resolver(resolvers);
-        return MM.deserialize(chat.getFirst(), resolver);
+        return Text.parse(chat.getFirst(), audience, resolvers);
     }
 
     public record SoundEntry(String sound, float volume, float pitch, Sound.Source source) {

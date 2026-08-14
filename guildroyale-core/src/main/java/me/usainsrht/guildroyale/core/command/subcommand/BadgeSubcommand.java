@@ -13,7 +13,7 @@ import me.usainsrht.guildroyale.core.config.BadgeDefinition;
 import me.usainsrht.guildroyale.core.config.CommandConfig;
 import me.usainsrht.guildroyale.core.feature.GuildFeature;
 import me.usainsrht.guildroyale.core.service.GuildServiceImpl;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import me.usainsrht.guildroyale.core.message.Text;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 
@@ -47,7 +47,6 @@ public final class BadgeSubcommand {
         if (!(ctx.getSource().getSender() instanceof Player player)) return 0;
         GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
         if (plugin == null) return 0;
-        MiniMessage mm = MiniMessage.miniMessage();
 
         plugin.getScheduler().runAsync(() ->
                 plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenAccept(opt ->
@@ -73,9 +72,10 @@ public final class BadgeSubcommand {
                                         : owned ? "<yellow>OWNED"
                                         : badge.isBuyable() ? "<gray>BUY " + service.economy().format(badge.cost())
                                         : "<dark_gray>GRANT-ONLY";
-                                player.sendMessage(mm.deserialize(
+                                player.sendMessage(Text.parse(
                                         "<gray>- <white>" + badge.id() + " </white>"
-                                                + badge.display() + " <dark_gray>|</dark_gray> " + status));
+                                                + badge.display() + " <dark_gray>|</dark_gray> " + status,
+                                        player));
                             }
                         })
                 )

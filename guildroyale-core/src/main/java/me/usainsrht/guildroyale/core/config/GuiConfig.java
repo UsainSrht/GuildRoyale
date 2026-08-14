@@ -1,10 +1,11 @@
 package me.usainsrht.guildroyale.core.config;
 
+import me.usainsrht.guildroyale.core.message.Text;
 import me.usainsrht.itemapi.yamlitem.YamlItem;
 import me.usainsrht.itemapi.yamlitem.YamlParseException;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -32,7 +33,6 @@ import java.util.logging.Level;
 public final class GuiConfig {
 
     private final JavaPlugin plugin;
-    private final MiniMessage mm = MiniMessage.miniMessage();
     private YamlConfiguration config;
     private final Map<String, ItemStack> items = new HashMap<>();
 
@@ -62,6 +62,11 @@ public final class GuiConfig {
             for (String key : itemsSection.getKeys(false)) {
                 ConfigurationSection section = itemsSection.getConfigurationSection(key);
                 if (section == null) {
+                    continue;
+                }
+                // Air is a valid empty filler; YamlItem cannot build AIR stacks.
+                if (isAirMaterial(section.getString("material"))) {
+                    items.put(key.toLowerCase(Locale.ROOT), new ItemStack(Material.AIR));
                     continue;
                 }
                 try {
@@ -97,7 +102,12 @@ public final class GuiConfig {
 
     public Component component(String path, String def, TagResolver... resolvers) {
         String raw = config.getString(path, def);
-        return plain(mm.deserialize(raw != null ? raw : def, resolvers));
+        return plain(Text.parse(raw != null ? raw : def, resolvers));
+    }
+
+    public Component component(@Nullable Audience audience, String path, String def, TagResolver... resolvers) {
+        String raw = config.getString(path, def);
+        return plain(Text.parse(raw != null ? raw : def, audience, resolvers));
     }
 
     public Component component(String path, TagResolver... resolvers) {
@@ -108,7 +118,7 @@ public final class GuiConfig {
         List<String> lines = config.getStringList(path);
         List<Component> out = new ArrayList<>(lines.size());
         for (String line : lines) {
-            out.add(plain(mm.deserialize(line, resolvers)));
+            out.add(plain(Text.parse(line, resolvers)));
         }
         return out;
     }
@@ -198,13 +208,13 @@ public final class GuiConfig {
         }
         String name = section.getString("name");
         if (name != null) {
-            meta.displayName(plain(mm.deserialize(name, resolvers)));
+            meta.displayName(plain(Text.parse(name, resolvers)));
         }
         if (section.contains("lore")) {
             List<String> lines = section.getStringList("lore");
             List<Component> lore = new ArrayList<>(lines.size());
             for (String line : lines) {
-                lore.add(plain(mm.deserialize(line, resolvers)));
+                lore.add(plain(Text.parse(line, resolvers)));
             }
             meta.lore(lore);
         }
@@ -218,6 +228,14 @@ public final class GuiConfig {
             meta.setHideTooltip(true);
             stack.setItemMeta(meta);
         }
+    }
+
+    private static boolean isAirMaterial(@Nullable String raw) {
+        if (raw == null || raw.isBlank()) {
+            return false;
+        }
+        Material mat = Material.matchMaterial(raw.trim());
+        return mat != null && mat.isAir();
     }
 
     private static Component plain(Component component) {

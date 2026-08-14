@@ -1,9 +1,9 @@
 package me.usainsrht.guildroyale.core.config;
 
 import me.usainsrht.guildroyale.core.message.Message;
+import me.usainsrht.guildroyale.core.message.Text;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -25,7 +25,6 @@ import java.util.Map;
  */
 public final class MessagesManager {
 
-    private final MiniMessage mm = MiniMessage.miniMessage();
     private final JavaPlugin plugin;
     private final Map<String, Message> cache = new HashMap<>();
     private String rawPrefix = "";
@@ -115,16 +114,25 @@ public final class MessagesManager {
      * Returns the first chat line as a Component with prefix applied.
      * Prefer {@link #send(Audience, String, TagResolver...)} for full feedback.
      */
-    public Component prefixed(String key, TagResolver... resolvers) {
+    public Component prefixed(Audience audience, String key, TagResolver... resolvers) {
         Message msg = message(key);
         var chat = msg.chat();
         String line = (chat == null || chat.isEmpty())
                 ? "<red>Missing message: " + key
                 : chat.getFirst();
-        return mm.deserialize(rawPrefix + line, resolvers);
+        return Text.parse(rawPrefix + line, audience, resolvers);
+    }
+
+    /** Prefixed chat line with global MiniPlaceholders only (no audience). */
+    public Component prefixed(String key, TagResolver... resolvers) {
+        return prefixed(null, key, resolvers);
     }
 
     /** First chat line without prefix. */
+    public Component get(Audience audience, String key, TagResolver... resolvers) {
+        return message(key).firstChatComponent(audience, resolvers);
+    }
+
     public Component get(String key, TagResolver... resolvers) {
         return message(key).firstChatComponent(resolvers);
     }

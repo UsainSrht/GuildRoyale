@@ -102,8 +102,21 @@ public final class GuiItems {
         return get("gui-border-filler");
     }
 
+    /** Inner filler defaults to air when missing (not stone). */
     public static ItemStack innerFiller() {
-        return get("gui-inner-filler");
+        return getOr("gui-inner-filler", new ItemStack(Material.AIR));
+    }
+
+    /**
+     * Resolves a filler item key. Missing keys use {@code fallback} instead of stone.
+     */
+    public static ItemStack getOr(String key, ItemStack fallback) {
+        GuiConfig gui = config();
+        if (gui == null) {
+            return fallback.clone();
+        }
+        ItemStack item = gui.item(key);
+        return item != null ? item : fallback.clone();
     }
 
     private static boolean isBlankLine(Component component) {

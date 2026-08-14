@@ -3,10 +3,10 @@ package me.usainsrht.guildroyale.core.gui;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.config.ItemRequirement;
+import me.usainsrht.guildroyale.core.message.Text;
 import me.usainsrht.guildroyale.core.service.GuildServiceImpl;
 import me.usainsrht.itemapi.itemtext.ItemText;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Material;
@@ -88,7 +88,6 @@ public final class CreateEligibility {
     public static List<Component> requirementLore(Player player) {
         GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
         List<Component> lines = new ArrayList<>();
-        MiniMessage mm = MiniMessage.miniMessage();
         if (plugin == null) {
             return lines;
         }
@@ -96,56 +95,58 @@ public final class CreateEligibility {
         var config = plugin.getConfigManager();
         GuildServiceImpl service = (GuildServiceImpl) plugin.getGuildService();
 
-        lines.add(line(gui, mm, "hub.requirements.separator", " <dark_gray>───────────────── "));
-        lines.add(line(gui, mm, "hub.requirements.header", " <yellow>Requirements: "));
+        try (Text.Scope ignored = Text.push(player)) {
+            lines.add(line(gui, player, "hub.requirements.separator", " <dark_gray>───────────────── "));
+            lines.add(line(gui, player, "hub.requirements.header", " <yellow>Requirements: "));
 
-        if (config.isCreationPermissionEnabled()) {
-            boolean ok = player.hasPermission(config.getCreationPermissionNode());
-            String path = ok ? "hub.requirements.permission-ok" : "hub.requirements.permission-fail";
-            String def = ok
-                    ? " <green>✔ <gray>Permission "
-                    : " <red>✘ <gray>Permission <dark_gray>(<node>) ";
-            lines.add(line(gui, mm, path, def,
-                    Placeholder.unparsed("node", config.getCreationPermissionNode())));
-        }
-
-        if (config.isCreationMoneyEnabled()) {
-            double cost = config.getCreationMoneyCost();
-            boolean ok = cost <= 0 || service.economy().has(player.getUniqueId(), cost);
-            String formatted = service.economy().format(cost);
-            String path = ok ? "hub.requirements.cost-ok" : "hub.requirements.cost-fail";
-            String def = ok
-                    ? " <green>✔ <gray>Cost: <white><cost> "
-                    : " <red>✘ <gray>Cost: <white><cost> ";
-            lines.add(line(gui, mm, path, def, Placeholder.unparsed("cost", formatted)));
-        }
-
-        if (config.isCreationItemsEnabled()) {
-            String okPrefix = string(gui, "hub.requirements.item-ok-prefix", " <green>✔ ");
-            String failPrefix = string(gui, "hub.requirements.item-fail-prefix", " <red>✘ ");
-            for (ItemRequirement req : config.getCreationItemRequirements()) {
-                Material mat = Material.matchMaterial(req.material());
-                if (mat == null || mat.isAir()) {
-                    continue;
-                }
-                ItemStack stack = new ItemStack(mat, Math.max(1, req.amount()));
-                boolean ok = player.getInventory().containsAtLeast(new ItemStack(mat), req.amount());
-                Component formatted = ItemText.format(stack, opts -> opts
-                        .pattern("<item_sprite><item_amount> <item_displayname>")
-                        .showAmountWhenOne(true)
-                        .hoverEnabled(false));
-                lines.add(Component.text()
-                        .append(mm.deserialize(ok ? okPrefix : failPrefix))
-                        .append(formatted)
-                        .append(Component.text(" "))
-                        .build());
+            if (config.isCreationPermissionEnabled()) {
+                boolean ok = player.hasPermission(config.getCreationPermissionNode());
+                String path = ok ? "hub.requirements.permission-ok" : "hub.requirements.permission-fail";
+                String def = ok
+                        ? " <green>✔ <gray>Permission "
+                        : " <red>✘ <gray>Permission <dark_gray>(<node>) ";
+                lines.add(line(gui, player, path, def,
+                        Placeholder.unparsed("node", config.getCreationPermissionNode())));
             }
-        }
 
-        if (!config.isCreationPermissionEnabled()
-                && !config.isCreationMoneyEnabled()
-                && !config.isCreationItemsEnabled()) {
-            lines.add(line(gui, mm, "hub.requirements.none", " <gray>None: free to create! "));
+            if (config.isCreationMoneyEnabled()) {
+                double cost = config.getCreationMoneyCost();
+                boolean ok = cost <= 0 || service.economy().has(player.getUniqueId(), cost);
+                String formatted = service.economy().format(cost);
+                String path = ok ? "hub.requirements.cost-ok" : "hub.requirements.cost-fail";
+                String def = ok
+                        ? " <green>✔ <gray>Cost: <white><cost> "
+                        : " <red>✘ <gray>Cost: <white><cost> ";
+                lines.add(line(gui, player, path, def, Placeholder.unparsed("cost", formatted)));
+            }
+
+            if (config.isCreationItemsEnabled()) {
+                String okPrefix = string(gui, "hub.requirements.item-ok-prefix", " <green>✔ ");
+                String failPrefix = string(gui, "hub.requirements.item-fail-prefix", " <red>✘ ");
+                for (ItemRequirement req : config.getCreationItemRequirements()) {
+                    Material mat = Material.matchMaterial(req.material());
+                    if (mat == null || mat.isAir()) {
+                        continue;
+                    }
+                    ItemStack stack = new ItemStack(mat, Math.max(1, req.amount()));
+                    boolean ok = player.getInventory().containsAtLeast(new ItemStack(mat), req.amount());
+                    Component formatted = ItemText.format(stack, opts -> opts
+                            .pattern("<item_sprite><item_amount> <item_displayname>")
+                            .showAmountWhenOne(true)
+                            .hoverEnabled(false));
+                    lines.add(Component.text()
+                            .append(Text.parse(ok ? okPrefix : failPrefix, player))
+                            .append(formatted)
+                            .append(Component.text(" "))
+                            .build());
+                }
+            }
+
+            if (!config.isCreationPermissionEnabled()
+                    && !config.isCreationMoneyEnabled()
+                    && !config.isCreationItemsEnabled()) {
+                lines.add(line(gui, player, "hub.requirements.none", " <gray>None: free to create! "));
+            }
         }
 
         return lines;
@@ -155,10 +156,10 @@ public final class CreateEligibility {
         return gui != null ? gui.string(path, def) : def;
     }
 
-    private static Component line(GuiConfig gui, MiniMessage mm, String path, String def,
+    private static Component line(GuiConfig gui, Player player, String path, String def,
                                   TagResolver... resolvers) {
         String raw = string(gui, path, def);
-        return mm.deserialize(raw, resolvers);
+        return Text.parse(raw, player, resolvers);
     }
 
     public static String costPlaceholder(Player player) {

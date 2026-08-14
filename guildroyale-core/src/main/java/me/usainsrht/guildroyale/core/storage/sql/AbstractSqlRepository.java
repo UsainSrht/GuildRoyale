@@ -4,6 +4,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import me.usainsrht.guildroyale.api.domain.Guild;
 import me.usainsrht.guildroyale.api.domain.GuildMember;
 import me.usainsrht.guildroyale.api.domain.GuildRole;
+import me.usainsrht.guildroyale.api.domain.RoleColor;
 import me.usainsrht.guildroyale.api.domain.SerializableItemStack;
 import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.api.storage.GuildRepository;
@@ -111,9 +112,12 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     name       TEXT NOT NULL,
                     icon_mat   TEXT,
                     icon_data  BLOB,
+                    color      TEXT,
                     PRIMARY KEY (guild_id, role_index),
                     FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
                 )""".formatted(uuid));
+
+            tryAddColumn(stmt, "guild_roles", "color", "TEXT");
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS guild_role_permissions (
@@ -352,7 +356,8 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     String rName = rs.getString("name");
                     SerializableItemStack rIcon = new SerializableItemStack(
                             rs.getString("icon_mat"), rs.getBytes("icon_data"));
-                    guild.addRole(new GuildRole(rName, idx, loadPermissions(conn, id, idx), rIcon));
+                    RoleColor rColor = RoleColor.fromString(rs.getString("color")).orElse(RoleColor.WHITE);
+                    guild.addRole(new GuildRole(rName, idx, loadPermissions(conn, id, idx), rIcon, rColor));
                 }
             }
         }
@@ -474,12 +479,13 @@ public abstract class AbstractSqlRepository implements GuildRepository {
 
     private void upsertRole(Connection conn, String guildId, GuildRole role) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO guild_roles (guild_id, role_index, name, icon_mat, icon_data) VALUES (?, ?, ?, ?, ?)")) {
+                "INSERT INTO guild_roles (guild_id, role_index, name, icon_mat, icon_data, color) VALUES (?, ?, ?, ?, ?, ?)")) {
             ps.setString(1, guildId);
             ps.setInt(2, role.getIndex());
             ps.setString(3, role.getName());
             ps.setString(4, role.getIcon().getMaterial());
             ps.setBytes(5, role.getIcon().getRawData());
+            ps.setString(6, role.getColor().name());
             ps.executeUpdate();
         }
         for (GuildPermissionKey perm : role.getPermissions()) {

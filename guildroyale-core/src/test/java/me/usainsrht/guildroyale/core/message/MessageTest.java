@@ -89,4 +89,22 @@ class MessageTest {
         assertEquals(1.5f, s2.pitch());
         assertEquals(Sound.Source.PLAYER, s2.source());
     }
+
+    @Test
+    void testSoundKeyWithUnderscore() {
+        java.util.List<Sound> playedSounds = new java.util.ArrayList<>();
+        net.kyori.adventure.audience.Audience audience = new net.kyori.adventure.audience.Audience() {
+            @Override
+            public void playSound(Sound sound) {
+                playedSounds.add(sound);
+            }
+        };
+
+        Message message = Message.parse(Map.of("sound", "entity.ender_dragon.death"));
+        message.send(audience, null);
+
+        assertEquals(1, playedSounds.size());
+        assertEquals("minecraft", playedSounds.get(0).name().namespace());
+        assertEquals("entity.ender_dragon.death", playedSounds.get(0).name().value());
+    }
 }

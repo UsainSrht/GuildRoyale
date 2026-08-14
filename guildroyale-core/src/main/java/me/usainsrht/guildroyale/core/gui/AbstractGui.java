@@ -1,5 +1,6 @@
 package me.usainsrht.guildroyale.core.gui;
 
+import me.usainsrht.guildroyale.core.message.Text;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -87,9 +88,11 @@ public abstract class AbstractGui implements InventoryHolder {
     }
 
     public void open(Player player) {
-        this.inventory = Bukkit.createInventory(this, size, title);
-        build();
-        player.openInventory(inventory);
+        try (Text.Scope ignored = Text.push(player)) {
+            this.inventory = Bukkit.createInventory(this, size, title);
+            build();
+            player.openInventory(inventory);
+        }
     }
 
     @Override

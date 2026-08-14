@@ -8,6 +8,7 @@
 #    - Paged titles: base title + non-bold " page (current/max)" via title-paged
 #    - Default size: 54 (6 rows)
 #    - List nav: prev=45, action2=47, back=49, action1=51, next=53, top-action=4
+#    - List fillers: border-filler / inner-filler (item keys; inner defaults to air)
 #    - Item names: bold (+ soft gradient preferred)
 #    - Lore: empty first/last line; each content line padded with a trailing space
 # ─────────────────────────────────────────────────────────────────
@@ -61,19 +62,15 @@ main:
     storage: 31
     bank: 33
     settings: 40
-
-info:
-  size: 54
-  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Info</bold></gradient></shadow>"
-  slots:
-    info: 22
-    back: 49
   badge-line: " <gray>Badge: <badge> "
 
 members:
   size: 54
   title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Members</bold></gradient></shadow>"
   title-paged: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Members</bold> page (<page>/<max_page>)</gradient></shadow>"
+  # Optional: override shared fillers (item keys under items:)
+  # border-filler: gui-border-filler
+  # inner-filler: gui-inner-filler
   slots:
     previous: 45
     action2: 47
@@ -96,6 +93,8 @@ roles:
   size: 54
   title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Roles</bold></gradient></shadow>"
   title-paged: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Roles</bold> page (<page>/<max_page>)</gradient></shadow>"
+  # border-filler: gui-border-filler
+  # inner-filler: gui-inner-filler
   slots:
     previous: 45
     action2: 47
@@ -110,20 +109,44 @@ role-editor:
   title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Edit Role: <role></bold></gradient></shadow>"
   slots:
     info: 4
-    permissions-start: 10
-    set-icon: 47
-    delete: 51
+    set-icon: 45
+    set-color: 47
     back: 49
-  permission-enabled: "<green><bold>✔ <permission>"
-  permission-disabled: "<red><bold>✗ <permission>"
+    rename: 51
+    delete: 53
+
+role-color:
+  size: 54
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Role Color: <role></bold></gradient></shadow>"
+  slots:
+    back: 49
+  selected: "<green><bold><color> <dark_gray>« selected"
+  unselected: "<color_tag><bold><color>"
+
+permissions:
+  size: 54
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Permissions</bold></gradient></shadow>"
+  title-paged: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Permissions</bold> page (<page>/<max_page>)</gradient></shadow>"
+  slots:
+    previous: 45
+    action2: 47
+    back: 49
+    action1: 51
+    next: 53
+    top-action: 4
+  entry-name: "<gradient:#f4d03f:#f9e79f><bold><permission></bold></gradient>"
+  role-line: " <gray><role> "
+  role-line-selected: " <green><role> <dark_gray>« "
+  click-hint: " <yellow>Left/Right click to change "
   materials:
-    permission-enabled: lime_dye
-    permission-disabled: red_dye
+    entry: paper
 
 leaderboard:
   size: 54
   title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Leaderboard</bold></gradient></shadow>"
   title-paged: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Leaderboard</bold> page (<page>/<max_page>)</gradient></shadow>"
+  # border-filler: gui-border-filler
+  # inner-filler: gui-inner-filler
   slots:
     previous: 45
     action2: 47
@@ -230,11 +253,15 @@ items:
   # ── Main menu (in a guild) ─────────────────────────────────────
   main-info:
     material: paper
-    name: "<gradient:#5dade2:#aed6f1><bold>Guild Info</bold></gradient>"
+    name: "<gradient:#5dade2:#aed6f1><bold><guild></bold></gradient>"
     lore:
       - ""
-      - " <gray>View level, XP, members, "
-      - " <gray>and other guild details. "
+      - " <gray>Shortname: [<shortname>] "
+      - " <gray>Level: <level> "
+      - " <gray>XP: <xp> "
+      - " <gray>Members: <members> "
+      - " <gray>Leader: <leader> "
+      - " <gray>Founded: <founded> "
       - ""
 
   main-members:
@@ -250,7 +277,8 @@ items:
     name: "<gradient:#f4d03f:#f9e79f><bold>Roles</bold></gradient>"
     lore:
       - ""
-      - " <gray>Manage roles & permissions. "
+      - " <gray>Manage roles, colors, and "
+      - " <gray>open the permissions menu. "
       - ""
 
   main-leaderboard:
@@ -389,20 +417,6 @@ items:
       - " <gray>Close this menu. "
       - ""
 
-  # ── Info ───────────────────────────────────────────────────────
-  info-book:
-    material: book
-    name: "<gradient:#f0c14b:#ffe08a><bold><guild></bold></gradient>"
-    lore:
-      - ""
-      - " <gray>Shortname: [<shortname>] "
-      - " <gray>Level: <level> "
-      - " <gray>XP: <xp> "
-      - " <gray>Members: <members> "
-      - " <gray>Leader: <leader> "
-      - " <gray>Founded: <founded> "
-      - ""
-
   # ── Members ────────────────────────────────────────────────────
   members-entry:
     material: player_head
@@ -454,8 +468,8 @@ items:
     name: "<gradient:#f0c14b:#ffe08a><bold><role></bold></gradient>"
     lore:
       - ""
-      - " <gray>Index: <white><index> "
-      - " <gray>Permissions: <white><permissions> "
+      - " <gray>Members: <white><members> "
+      - " <gray>Color: <white><color> "
       - " <yellow>Click to edit "
       - ""
 
@@ -467,13 +481,23 @@ items:
       - " <gray>Add a new role to this guild. "
       - ""
 
+  roles-permissions:
+    material: redstone
+    name: "<gradient:#e74c3c:#f1948a><bold>Permissions</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Set which roles can use "
+      - " <gray>each guild permission. "
+      - ""
+
   # ── Role editor ────────────────────────────────────────────────
   role-editor-info:
     material: name_tag
     name: "<gradient:#f0c14b:#ffe08a><bold>Role: <role></bold></gradient>"
     lore:
       - ""
-      - " <gray>Toggle permissions below. "
+      - " <gray>Color: <white><color> "
+      - " <gray>Members: <white><members> "
       - ""
 
   role-editor-set-icon:
@@ -481,7 +505,24 @@ items:
     name: "<gradient:#5dade2:#aed6f1><bold>Set Icon</bold></gradient>"
     lore:
       - ""
-      - " <gray>Hold an item and click to set as role icon "
+      - " <gray>Pick an item from your inventory. "
+      - ""
+
+  role-editor-set-color:
+    material: white_dye
+    name: "<gradient:#f4d03f:#f9e79f><bold>Set Color</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Current: <white><color> "
+      - " <yellow>Click <gray>to pick a dye color. "
+      - ""
+
+  role-editor-rename:
+    material: name_tag
+    name: "<gradient:#55c57a:#a8e6c1><bold>Rename</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Change this role's name. "
       - ""
 
   role-editor-delete:
@@ -490,6 +531,14 @@ items:
     lore:
       - ""
       - " <red>Remove this role. Members will be reassigned. "
+      - ""
+
+  role-editor-member:
+    material: player_head
+    name: "<gradient:#f4d03f:#f9e79f><bold><player></bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Contribution: <white><contribution> XP "
       - ""
 
   # ── Leaderboard ────────────────────────────────────────────────

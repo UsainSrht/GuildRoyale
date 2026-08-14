@@ -3,6 +3,7 @@ package me.usainsrht.guildroyale.core.service;
 import me.usainsrht.guildroyale.api.domain.Guild;
 import me.usainsrht.guildroyale.api.domain.GuildMember;
 import me.usainsrht.guildroyale.api.domain.GuildRole;
+import me.usainsrht.guildroyale.api.domain.RoleColor;
 import me.usainsrht.guildroyale.api.domain.SerializableItemStack;
 import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.api.service.ActionResult;
@@ -14,7 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 
 /**
- * Manages guild roles — creation, deletion, rename, icon, and permissions.
+ * Manages guild roles — creation, deletion, rename, icon, color, and permissions.
  */
 public final class RoleServiceImpl implements RoleService {
 
@@ -38,7 +39,7 @@ public final class RoleServiceImpl implements RoleService {
             int nextIndex = guild.getRoles().stream()
                     .mapToInt(GuildRole::getIndex).max().orElse(0) + 1;
             GuildRole newRole = new GuildRole(roleName, nextIndex, EnumSet.noneOf(GuildPermissionKey.class),
-                    SerializableItemStack.EMPTY);
+                    SerializableItemStack.EMPTY, RoleColor.WHITE);
             guild.addRole(newRole);
             return null; // save triggered by caller
         });
@@ -84,6 +85,17 @@ public final class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    public CompletableFuture<ActionResult> setRoleColor(UUID guildId, UUID requesterId, int roleIndex, RoleColor color) {
+        if (color == null) return done(ActionResult.failure("role-color-invalid"));
+        return requireGuildAndPermission(guildId, requesterId, GuildPermissionKey.ROLE_MANAGEMENT, guild -> {
+            Optional<GuildRole> roleOpt = guild.getRole(roleIndex);
+            if (roleOpt.isEmpty()) return ActionResult.failure("role-not-found");
+            roleOpt.get().setColor(color);
+            return null;
+        });
+    }
+
+    @Override
     public CompletableFuture<ActionResult> setRolePermissions(UUID guildId, UUID requesterId, int roleIndex, Set<GuildPermissionKey> permissions) {
         if (roleIndex == 0) return done(ActionResult.failure("role-leader-protected"));
         return requireGuildAndPermission(guildId, requesterId, GuildPermissionKey.ROLE_MANAGEMENT, guild -> {
@@ -103,6 +115,31 @@ public final class RoleServiceImpl implements RoleService {
             GuildRole role = roleOpt.get();
             if (role.hasPermission(key)) role.removePermission(key);
             else role.addPermission(key);
+            return null;
+        });
+    }
+
+    @Override
+    public CompletableFuture<ActionResult> setPermissionMinRole(UUID guildId, UUID requesterId,
+                                                                GuildPermissionKey key, int minRoleIndex) {
+        if (key == null) return done(ActionResult.failure("permission-invalid"));
+        return requireGuildAndPermission(guildId, requesterId, GuildPermissionKey.ROLE_MANAGEMENT, guild -> {
+            int maxIndex = guild.getRoles().stream().mapToInt(GuildRole::getIndex).max().orElse(0);
+            if (minRoleIndex < 0 || minRoleIndex > maxIndex) {
+                return ActionResult.failure("role-index-invalid");
+            }
+            for (GuildRole role : guild.getRoles()) {
+                if (role.getIndex() == 0) {
+                    // Leader always retains every permission.
+                    role.addPermission(key);
+                    continue;
+                }
+                if (role.getIndex() <= minRoleIndex) {
+                    role.addPermission(key);
+                } else {
+                    role.removePermission(key);
+                }
+            }
             return null;
         });
     }

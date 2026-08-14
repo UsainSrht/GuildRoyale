@@ -4,6 +4,7 @@ import com.google.gson.*;
 import me.usainsrht.guildroyale.api.domain.Guild;
 import me.usainsrht.guildroyale.api.domain.GuildMember;
 import me.usainsrht.guildroyale.api.domain.GuildRole;
+import me.usainsrht.guildroyale.api.domain.RoleColor;
 import me.usainsrht.guildroyale.api.domain.SerializableItemStack;
 import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.api.storage.GuildRepository;
@@ -181,6 +182,7 @@ public final class JsonGuildRepository implements GuildRepository {
             JsonObject ro = new JsonObject();
             ro.addProperty("name", r.getName());
             ro.addProperty("index", r.getIndex());
+            ro.addProperty("color", r.getColor().name());
             ro.add("icon", serializeIcon(r.getIcon()));
             JsonArray perms = new JsonArray();
             r.getPermissions().forEach(p -> perms.add(p.name()));
@@ -219,11 +221,13 @@ public final class JsonGuildRepository implements GuildRepository {
             String rName = ro.get("name").getAsString();
             int rIndex = ro.get("index").getAsInt();
             SerializableItemStack rIcon = deserializeIcon(ro.getAsJsonObject("icon"));
+            RoleColor rColor = RoleColor.fromString(
+                    ro.has("color") ? ro.get("color").getAsString() : null).orElse(RoleColor.WHITE);
             Set<GuildPermissionKey> perms = new HashSet<>();
             for (JsonElement pe : ro.getAsJsonArray("permissions")) {
                 try { perms.add(GuildPermissionKey.valueOf(pe.getAsString())); } catch (Exception ignored) {}
             }
-            roles.add(new GuildRole(rName, rIndex, perms, rIcon));
+            roles.add(new GuildRole(rName, rIndex, perms, rIcon, rColor));
         }
 
         Map<Integer, GuildRole> roleByIndex = new HashMap<>();

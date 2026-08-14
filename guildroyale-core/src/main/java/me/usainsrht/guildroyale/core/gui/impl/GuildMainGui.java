@@ -11,15 +11,31 @@ import me.usainsrht.guildroyale.core.feature.GuildFeature;
 import me.usainsrht.guildroyale.core.gui.AbstractGui;
 import me.usainsrht.guildroyale.core.gui.GuiItems;
 import me.usainsrht.guildroyale.core.gui.GuiManager;
+import me.usainsrht.guildroyale.core.message.Text;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Hub GUI for players who are already in a guild.
+ * Guild stats are shown as lore on the info icon (no separate info GUI).
  */
 public final class GuildMainGui extends AbstractGui {
+
+    private static final DateTimeFormatter DATE_FMT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
 
     private final Guild guild;
     private final GuildMember viewer;
@@ -55,10 +71,10 @@ public final class GuildMainGui extends AbstractGui {
         return gui != null ? gui.size("main.size", 54) : 54;
     }
 
-    private static net.kyori.adventure.text.Component title(Guild guild) {
+    private static Component title(Guild guild) {
         GuiConfig gui = GuiItems.config();
         if (gui == null) {
-            return net.kyori.adventure.text.Component.text("Guild Menu");
+            return Component.text("Guild Menu");
         }
         return gui.title("main.title", Placeholder.unparsed("guild", guild.getName()));
     }
@@ -72,7 +88,7 @@ public final class GuildMainGui extends AbstractGui {
             setSlot(iconSlot, icon);
         }
 
-        setSlot(infoSlot, GuiItems.get("main-info"));
+        setSlot(infoSlot, buildInfoItem());
         setSlot(membersSlot, GuiItems.get("main-members"));
         setSlot(rolesSlot, GuiItems.get("main-roles"));
         setSlot(leaderboardSlot, GuiItems.get("main-leaderboard"));
@@ -83,16 +99,63 @@ public final class GuildMainGui extends AbstractGui {
         setSlot(settingsSlot, GuiItems.get("main-settings"));
     }
 
+    private ItemStack buildInfoItem() {
+        Optional<GuildMember> leaderOpt = guild.getMembers().stream()
+                .filter(m -> m.getRole().getIndex() == 0).findFirst();
+        String leaderName = leaderOpt.map(m -> Bukkit.getOfflinePlayer(m.getPlayerId()).getName())
+                .filter(s -> s != null).orElse("Unknown");
+
+        ItemStack infoItem = GuiItems.get("main-info",
+                Placeholder.unparsed("guild", guild.getName()),
+                Placeholder.unparsed("shortname", guild.getShortname()),
+                Placeholder.unparsed("level", String.valueOf(guild.getLevel())),
+                Placeholder.unparsed("xp", String.valueOf(guild.getXp())),
+                Placeholder.unparsed("members", String.valueOf(guild.getMemberCount())),
+                Placeholder.unparsed("leader", leaderName),
+                Placeholder.unparsed("founded", DATE_FMT.format(guild.getCreatedAt())));
+
+        if (guild.getActiveBadgeId() != null) {
+            appendBadgeLine(infoItem);
+        }
+        return infoItem;
+    }
+
+    private void appendBadgeLine(ItemStack infoItem) {
+        GuiConfig gui = GuiItems.config();
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        String display = plugin != null
+                ? plugin.getConfigManager().getBadgeDisplay(guild.getActiveBadgeId())
+                        .orElse(guild.getActiveBadgeId())
+                : guild.getActiveBadgeId();
+
+        String template = gui != null
+                ? gui.string("main.badge-line", " <gray>Badge: <badge> ")
+                : " <gray>Badge: <badge> ";
+
+        ItemMeta meta = infoItem.getItemMeta();
+        if (meta == null) return;
+        List<Component> lore = meta.lore() != null ? new ArrayList<>(meta.lore()) : new ArrayList<>();
+        Component badgeLine = Text.parse(template, Placeholder.component("badge", Text.parse(display)))
+                .decoration(TextDecoration.ITALIC, false);
+        if (!lore.isEmpty() && PlainTextComponentSerializer.plainText().serialize(lore.get(lore.size() - 1)).isEmpty()) {
+            lore.add(lore.size() - 1, badgeLine);
+        } else {
+            lore.add(badgeLine);
+            lore.add(Component.empty());
+        }
+        meta.lore(lore);
+        infoItem.setItemMeta(meta);
+    }
+
     @Override
     public boolean onClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return true;
         GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
         int slot = event.getRawSlot();
 
-        if (slot == infoSlot) {
-            new GuildInfoGui(guild, guiManager)
-                    .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))
-                    .open(player);
+        if (slot == infoSlot || slot == iconSlot) {
+            // Info is lore-only; icon is display-only.
+            return true;
         } else if (slot == membersSlot) {
             new GuildMembersGui(guild, viewer, guiManager, 0)
                     .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))

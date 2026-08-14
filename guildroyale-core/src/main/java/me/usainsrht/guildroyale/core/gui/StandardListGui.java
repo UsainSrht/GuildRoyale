@@ -1,10 +1,11 @@
 package me.usainsrht.guildroyale.core.gui;
 
 import me.usainsrht.guildroyale.core.config.GuiConfig;
+import me.usainsrht.guildroyale.core.message.Text;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
@@ -86,11 +87,12 @@ public abstract class StandardListGui<T> extends AbstractGui {
             this.action2Slot = config.slot(configPrefix + ".slots.action2", lastRowStart + 2);
             this.topActionSlot = config.slot(configPrefix + ".slots.top-action", 4);
 
+            // Per-GUI overrides point at item keys under items: (same as shared fillers).
             String borderKey = config.string(configPrefix + ".border-filler", "gui-border-filler");
-            this.borderFillerItem = GuiItems.get(borderKey);
+            this.borderFillerItem = GuiItems.getOr(borderKey, new ItemStack(Material.BLACK_STAINED_GLASS_PANE));
 
             String innerKey = config.string(configPrefix + ".inner-filler", "gui-inner-filler");
-            this.innerFillerItem = GuiItems.get(innerKey);
+            this.innerFillerItem = GuiItems.getOr(innerKey, new ItemStack(Material.AIR));
         } else {
             this.previousSlot = lastRowStart + 0;
             this.nextSlot = lastRowStart + 8;
@@ -152,7 +154,7 @@ public abstract class StandardListGui<T> extends AbstractGui {
         if (!formatted.contains("<gradient:")) {
             formatted = "<gradient:#f0c14b:#ffe08a>" + formatted + "</gradient>";
         }
-        return MiniMessage.miniMessage().deserialize(formatted, resolvers).decoration(TextDecoration.ITALIC, false);
+        return Text.parse(formatted, resolvers).decoration(TextDecoration.ITALIC, false);
     }
 
     private static Component formatTitleComponent(Component component) {

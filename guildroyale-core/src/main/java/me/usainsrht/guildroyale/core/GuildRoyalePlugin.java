@@ -16,6 +16,7 @@ import me.usainsrht.guildroyale.core.dialog.DialogManager;
 import me.usainsrht.guildroyale.core.event.EventDispatcher;
 import me.usainsrht.guildroyale.core.gui.GuiManager;
 import me.usainsrht.guildroyale.core.integration.GuildRoyalePlaceholderExpansion;
+import me.usainsrht.guildroyale.core.integration.MiniPlaceholdersHook;
 import me.usainsrht.guildroyale.core.listener.GuildEventListener;
 import me.usainsrht.guildroyale.core.listener.GuiListener;
 import me.usainsrht.guildroyale.core.listener.PlayerQuitListener;
@@ -100,12 +101,14 @@ public final class GuildRoyalePlugin extends JavaPlugin {
             new GuildRoyalePlaceholderExpansion(this, guildService, leaderboardService).register();
             getSLF4JLogger().info("PlaceholderAPI integration enabled.");
         }
+        MiniPlaceholdersHook.register(this, guildService, leaderboardService);
 
         getSLF4JLogger().info("GuildRoyale enabled successfully.");
     }
 
     @Override
     public void onDisable() {
+        MiniPlaceholdersHook.unregister();
         if (guiManager != null) guiManager.clear();
         if (memberService != null) memberService.shutdown();
         if (repository != null) repository.shutdown();

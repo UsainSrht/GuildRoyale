@@ -1,5 +1,6 @@
 package me.usainsrht.guildroyale.api.service;
 
+import me.usainsrht.guildroyale.api.domain.RoleColor;
 import me.usainsrht.guildroyale.api.domain.SerializableItemStack;
 import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 
@@ -38,6 +39,12 @@ public interface RoleService {
     CompletableFuture<ActionResult> setRoleIcon(UUID guildId, UUID requesterId, int roleIndex, SerializableItemStack icon);
 
     /**
+     * Sets the display color of a role (one of the 16 dye colors).
+     * Requester must have {@code ROLE_MANAGEMENT}.
+     */
+    CompletableFuture<ActionResult> setRoleColor(UUID guildId, UUID requesterId, int roleIndex, RoleColor color);
+
+    /**
      * Replaces the full permission set of a role.
      * Requester must have {@code ROLE_MANAGEMENT}.
      * The Leader role (index 0) always retains all permissions regardless.
@@ -49,4 +56,13 @@ public interface RoleService {
      * Requester must have {@code ROLE_MANAGEMENT}.
      */
     CompletableFuture<ActionResult> togglePermission(UUID guildId, UUID requesterId, int roleIndex, GuildPermissionKey key);
+
+    /**
+     * Sets the lowest-rank (highest index) role that should hold {@code key}.
+     * All roles with {@code index <= minRoleIndex} receive the permission;
+     * roles below that rank lose it. The Leader role always keeps every permission.
+     * Requester must have {@code ROLE_MANAGEMENT}.
+     */
+    CompletableFuture<ActionResult> setPermissionMinRole(UUID guildId, UUID requesterId,
+                                                         GuildPermissionKey key, int minRoleIndex);
 }
