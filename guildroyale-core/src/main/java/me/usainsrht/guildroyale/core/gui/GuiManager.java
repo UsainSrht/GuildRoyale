@@ -40,11 +40,19 @@ public final class GuiManager {
         if (!(event.getWhoClicked() instanceof Player player)) return false;
         AbstractGui gui = openGuis.get(player.getUniqueId());
         if (gui == null) return false;
-        // Verify the clicked inventory belongs to this GUI (not the player's own inventory)
-        if (event.getClickedInventory() == null) return false;
-        InventoryHolder holder = event.getClickedInventory().getHolder();
-        if (holder != gui) return false;
+        if (event.getView().getTopInventory().getHolder() != gui) return false;
         return gui.onClick(event);
+    }
+
+    /**
+     * Dispatches a drag event. Returns {@code true} if the event should be cancelled.
+     */
+    public boolean handleDrag(org.bukkit.event.inventory.InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return false;
+        AbstractGui gui = openGuis.get(player.getUniqueId());
+        if (gui == null) return false;
+        if (event.getView().getTopInventory().getHolder() != gui) return false;
+        return gui.onDrag(event);
     }
 
     /** Returns the currently-open GUI for a player, or {@code null}. */

@@ -46,6 +46,7 @@ public final class GuildMainGui extends AbstractGui {
     private final int leaderboardSlot;
     private final int storageSlot;
     private final int bankSlot;
+    private final int permissionsSlot;
     private final int settingsSlot;
     private final int iconSlot;
 
@@ -63,7 +64,8 @@ public final class GuildMainGui extends AbstractGui {
         this.leaderboardSlot = gui != null ? gui.slot("main.slots.leaderboard", 29) : 29;
         this.storageSlot = gui != null ? gui.slot("main.slots.storage", 31) : 31;
         this.bankSlot = gui != null ? gui.slot("main.slots.bank", 33) : 33;
-        this.settingsSlot = gui != null ? gui.slot("main.slots.settings", 40) : 40;
+        this.permissionsSlot = gui != null ? gui.slot("main.slots.permissions", 38) : 38;
+        this.settingsSlot = gui != null ? gui.slot("main.slots.settings", 42) : 42;
     }
 
     private static int size() {
@@ -96,6 +98,7 @@ public final class GuildMainGui extends AbstractGui {
                 "main-storage", "main-storage-locked"));
         setSlot(bankSlot, GuiItems.featureItem(guild, GuildFeature.BANK,
                 "main-bank", "main-bank-locked"));
+        setSlot(permissionsSlot, GuiItems.get("main-permissions"));
         setSlot(settingsSlot, GuiItems.get("main-settings"));
     }
 
@@ -105,13 +108,21 @@ public final class GuildMainGui extends AbstractGui {
         String leaderName = leaderOpt.map(m -> Bukkit.getOfflinePlayer(m.getPlayerId()).getName())
                 .filter(s -> s != null).orElse("Unknown");
 
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        var guildRes = plugin != null
+                ? plugin.getTagService().guildResolver(guild, null)
+                : Placeholder.unparsed("guild", guild.getName());
+        var leaderRes = (plugin != null && leaderOpt.isPresent())
+                ? plugin.getTagService().memberResolver(leaderOpt.get(), guild, null)
+                : Placeholder.unparsed("leader", leaderName);
+
         ItemStack infoItem = GuiItems.get("main-info",
-                Placeholder.unparsed("guild", guild.getName()),
+                guildRes,
+                leaderRes,
                 Placeholder.unparsed("shortname", guild.getShortname()),
                 Placeholder.unparsed("level", String.valueOf(guild.getLevel())),
                 Placeholder.unparsed("xp", String.valueOf(guild.getXp())),
                 Placeholder.unparsed("members", String.valueOf(guild.getMemberCount())),
-                Placeholder.unparsed("leader", leaderName),
                 Placeholder.unparsed("founded", DATE_FMT.format(guild.getCreatedAt())));
 
         if (guild.getActiveBadgeId() != null) {
@@ -182,12 +193,16 @@ public final class GuildMainGui extends AbstractGui {
                 return true;
             }
             player.closeInventory();
-            StorageSubcommand.openStorage(player);
+            StorageSubcommand.openStorage(player, p -> new GuildMainGui(guild, viewer, guiManager).open(p));
         } else if (slot == bankSlot) {
             if (!GuiItems.isFeatureUnlocked(guild, GuildFeature.BANK)) {
                 return true;
             }
             BankSubcommand.showBalance(player);
+        } else if (slot == permissionsSlot) {
+            new PermissionsGui(guild, viewer, guiManager)
+                    .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))
+                    .open(player);
         } else if (slot == settingsSlot) {
             new GuildSettingsGui(guild, viewer, guiManager)
                     .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))

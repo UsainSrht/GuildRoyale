@@ -39,6 +39,13 @@ public final class GuiListener implements Listener {
     }
 
     @EventHandler
+    public void onInventoryDrag(org.bukkit.event.inventory.InventoryDragEvent event) {
+        if (guiManager.handleDrag(event)) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
         if (event.getPlayer() instanceof Player player) {
             AbstractGui gui = guiManager.getOpenGui(player.getUniqueId());

@@ -53,6 +53,27 @@ final class MiniPlaceholdersAccess {
                         (player, queue, ctx) -> tag(data.resolve(player.getUniqueId(), "role")))
                 .audiencePlaceholder(Player.class, "badge",
                         (player, queue, ctx) -> badgeTag(data.resolve(player.getUniqueId(), "badge")))
+                .audiencePlaceholder(Player.class, "guild_tag", (player, queue, ctx) -> {
+                    var guildOpt = plugin.getGuildService().getGuildByMember(player.getUniqueId()).join();
+                    if (guildOpt.isEmpty()) return Tags.EMPTY_TAG;
+                    return Tag.inserting(plugin.getTagService().renderGuildTag(guildOpt.get(), player));
+                })
+                .audiencePlaceholder(Player.class, "member_tag", (player, queue, ctx) -> {
+                    var guildOpt = plugin.getGuildService().getGuildByMember(player.getUniqueId()).join();
+                    if (guildOpt.isEmpty()) return Tags.EMPTY_TAG;
+                    var memberOpt = guildOpt.get().getMember(player.getUniqueId());
+                    if (memberOpt.isEmpty()) return Tags.EMPTY_TAG;
+                    return Tag.inserting(plugin.getTagService().renderMemberTag(memberOpt.get(), guildOpt.get(), player));
+                })
+                .audiencePlaceholder(Player.class, "player_tag", (player, queue, ctx) ->
+                        Tag.inserting(plugin.getTagService().renderPlayerTag(player, player)))
+                .audiencePlaceholder(Player.class, "role_tag", (player, queue, ctx) -> {
+                    var guildOpt = plugin.getGuildService().getGuildByMember(player.getUniqueId()).join();
+                    if (guildOpt.isEmpty()) return Tags.EMPTY_TAG;
+                    var memberOpt = guildOpt.get().getMember(player.getUniqueId());
+                    if (memberOpt.isEmpty()) return Tags.EMPTY_TAG;
+                    return Tag.inserting(plugin.getTagService().renderRoleTag(memberOpt.get().getRole(), guildOpt.get(), player));
+                })
                 .globalPlaceholder("top_name", (queue, ctx) -> {
                     int rank = queue.hasNext() ? queue.pop().asInt().orElse(1) : 1;
                     return tag(data.resolveTopField("name", rank));

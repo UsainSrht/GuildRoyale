@@ -18,6 +18,16 @@
 
 prefix: "<dark_gray>[<gradient:gold:yellow>GuildRoyale</gradient>]</dark_gray> "
 
+# ── Tags ──────────────────────────────────────────────────────────
+# Customisable component tags for guilds, roles, members, and players.
+# Supports MiniMessage formatting, hover text, nested tags (<member_player_tag>),
+# MiniPlaceholders v3 (global & audience), and custom placeholders.
+tags:
+  guild: "<hover:show_text:'<gradient:#f0c14b:#ffe08a><bold>Guild Information</bold></gradient><newline><gray>Level: <gold><guild_level></gold><newline><gray>Members: <gold><guild_members></gold> <dark_gray>(<green><guild_members_online> online</green>)</dark_gray><newline><gray>XP: <yellow><guild_xp></yellow><newline><gray>Leader: <gold><guild_leader></gold>'><yellow><guild_name></yellow></hover>"
+  role: "<hover:show_text:'<gray>Role Rank: <gold>#<role_index></gold>'><role_color><role_name></role_color></hover>"
+  member: "<hover:show_text:'<role_color><bold><member_role_name></bold></role_color><newline><gray>Contribution: <gold><member_contribution> XP</gold>'><role_color><member_player_tag></role_color></hover>"
+  player: "<player_displayname>"
+
 # ── General ──────────────────────────────────────────────────────
 no-permission: "<red>You do not have permission to do that."
 player-only: "<red>This command can only be used by players."
@@ -60,6 +70,7 @@ guild-creation-missing-items:
 
 # ── Feature locks ─────────────────────────────────────────────────
 feature-locked: "<red>Your guild must reach level <gold><level></gold> to unlock <yellow><feature></yellow>."
+storage-slot-locked: "<red>This storage slot is locked! Unlocks at guild level <gold><level></gold>."
 
 # ── Guild disband ─────────────────────────────────────────────────
 guild-disbanded:
@@ -122,7 +133,7 @@ role-usage: "<red>Usage: <yellow>/<cmd> <sub> <create|delete|rename|setpermissio
 icon-updated:
   chat: "<green>Guild icon updated!"
   sound: ui.loom.select_pattern
-icon-invalid: "<red>Please hold a valid item to set as the guild icon."
+icon-invalid: "<red>Please click with a valid item on your cursor to change the icon."
 
 # ── Shortname ─────────────────────────────────────────────────────
 shortname-changed:

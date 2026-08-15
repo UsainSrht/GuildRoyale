@@ -1,6 +1,9 @@
 package me.usainsrht.guildroyale.core.config;
 
+import me.usainsrht.guildroyale.api.domain.RoleColor;
+import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.core.feature.GuildFeature;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -13,9 +16,13 @@ import java.util.*;
  */
 public final class ConfigManager {
 
+    public record PermissionDisplay(String name, Material icon) {}
+
     private final JavaPlugin plugin;
     private FileConfiguration cfg;
     private Map<String, BadgeDefinition> badges = Map.of();
+    private Map<GuildPermissionKey, PermissionDisplay> permissions = Map.of();
+    private Map<RoleColor, String> roleColorNames = Map.of();
 
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -26,6 +33,8 @@ public final class ConfigManager {
         plugin.reloadConfig();
         cfg = plugin.getConfig();
         badges = loadBadges();
+        permissions = loadPermissions();
+        roleColorNames = loadRoleColorNames();
     }
 
     // ── Storage ─────────────────────────────────────────────────
@@ -107,22 +116,50 @@ public final class ConfigManager {
         return cfg.getInt("features." + feature.configKey() + ".unlock-level", 1);
     }
 
+    public int getStorageUnlockLevel() {
+        return getFeatureUnlockLevel(GuildFeature.STORAGE);
+    }
+
     public int getStorageSlotsPerLevel() {
         return Math.max(1, cfg.getInt("features.storage.slots-per-level", 9));
     }
 
     public int getStorageMaxSlots() {
-        return Math.min(54, Math.max(9, cfg.getInt("features.storage.max-slots", 54)));
+        return Math.max(9, cfg.getInt("features.storage.max-slots", 135));
     }
 
     /**
-     * Computes chest slot count for a guild level (multiple of 9, 9–54).
+     * Computes unlocked storage slots for a given guild level.
+     */
+    public int getStorageUnlockedSlots(int level) {
+        int unlockLevel = getStorageUnlockLevel();
+        if (level < unlockLevel) return 0;
+        int raw = (level - unlockLevel + 1) * getStorageSlotsPerLevel();
+        return Math.min(getStorageMaxSlots(), Math.max(0, raw));
+    }
+
+    /**
+     * Computes the required guild level to unlock a specific storage slot index (0-indexed).
+     */
+    public int getRequiredLevelForSlot(int slotIndex) {
+        int unlockLevel = getStorageUnlockLevel();
+        int perLevel = getStorageSlotsPerLevel();
+        return unlockLevel + (slotIndex / perLevel);
+    }
+
+    /**
+     * Computes total storage pages required for the max storage capacity.
+     */
+    public int getStoragePageCount(int slotsPerPage) {
+        if (slotsPerPage <= 0) slotsPerPage = 45;
+        return (getStorageMaxSlots() + slotsPerPage - 1) / slotsPerPage;
+    }
+
+    /**
+     * Legacy helper method for single-page slot calculation.
      */
     public int getStorageSlotsForLevel(int level) {
-        int raw = Math.min(getStorageMaxSlots(), Math.max(0, level) * getStorageSlotsPerLevel());
-        if (raw < 9) return 9;
-        int rounded = ((raw + 8) / 9) * 9;
-        return Math.min(54, rounded);
+        return getStorageUnlockedSlots(level);
     }
 
     // ── Badges ───────────────────────────────────────────────────
@@ -168,5 +205,75 @@ public final class ConfigManager {
 
     public long getInviteExpireSeconds() {
         return cfg.getLong("invite.expire-seconds", 120L);
+    }
+
+    // ── Permissions & Role Colors ───────────────────────────────
+
+    public String getPermissionName(GuildPermissionKey key) {
+        if (key == null) return "";
+        PermissionDisplay display = permissions.get(key);
+        if (display != null && display.name() != null && !display.name().isBlank()) {
+            return display.name();
+        }
+        return prettyPermissionName(key);
+    }
+
+    public Material getPermissionIcon(GuildPermissionKey key) {
+        if (key == null) return Material.PAPER;
+        PermissionDisplay display = permissions.get(key);
+        if (display != null && display.icon() != null) {
+            return display.icon();
+        }
+        return Material.PAPER;
+    }
+
+    public String getRoleColorName(RoleColor color) {
+        if (color == null) return "";
+        return roleColorNames.getOrDefault(color, color.miniMessage() + color.name());
+    }
+
+    private Map<GuildPermissionKey, PermissionDisplay> loadPermissions() {
+        ConfigurationSection section = cfg.getConfigurationSection("permissions");
+        if (section == null) return Map.of();
+        Map<GuildPermissionKey, PermissionDisplay> map = new EnumMap<>(GuildPermissionKey.class);
+        for (String key : section.getKeys(false)) {
+            ConfigurationSection perm = section.getConfigurationSection(key);
+            if (perm == null) continue;
+            try {
+                GuildPermissionKey permKey = GuildPermissionKey.valueOf(key.toUpperCase(Locale.ROOT));
+                String name = perm.getString("name");
+                String iconRaw = perm.getString("icon");
+                Material icon = iconRaw != null ? Material.matchMaterial(iconRaw) : null;
+                map.put(permKey, new PermissionDisplay(name, icon));
+            } catch (IllegalArgumentException ignored) {}
+        }
+        return Collections.unmodifiableMap(map);
+    }
+
+    private Map<RoleColor, String> loadRoleColorNames() {
+        ConfigurationSection section = cfg.getConfigurationSection("role-colors");
+        if (section == null) return Map.of();
+        Map<RoleColor, String> map = new EnumMap<>(RoleColor.class);
+        for (String key : section.getKeys(false)) {
+            RoleColor.fromString(key).ifPresent(color -> {
+                String val = section.getString(key);
+                if (val != null && !val.isBlank()) {
+                    map.put(color, val);
+                }
+            });
+        }
+        return Collections.unmodifiableMap(map);
+    }
+
+    private static String prettyPermissionName(GuildPermissionKey key) {
+        String raw = key.name().toLowerCase(Locale.ROOT).replace('_', ' ');
+        String[] parts = raw.split(" ");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (part.isEmpty()) continue;
+            if (!sb.isEmpty()) sb.append(' ');
+            sb.append(Character.toUpperCase(part.charAt(0))).append(part.substring(1));
+        }
+        return sb.toString();
     }
 }

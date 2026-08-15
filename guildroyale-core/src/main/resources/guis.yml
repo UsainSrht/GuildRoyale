@@ -61,7 +61,8 @@ main:
     leaderboard: 29
     storage: 31
     bank: 33
-    settings: 40
+    permissions: 38
+    settings: 42
   badge-line: " <gray>Badge: <badge> "
 
 members:
@@ -165,15 +166,14 @@ settings:
     back: 49
 
 storage:
-  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Storage</bold></gradient></shadow>"
-
-icon-selection:
   size: 54
-  title: "<shadow:#000000FF><gradient:#5dade2:#aed6f1><bold>Select an Icon</bold></gradient></shadow>"
-  content-slots: 36
-  instruction-slot: 49
-  instruction-row-start: 45
-  instruction-row-end: 54
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Storage</bold></gradient></shadow>"
+  title-paged: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Storage</bold> page (<page>/<max_page>)</gradient></shadow>"
+  slots:
+    previous: 45
+    back: 49
+    next: 53
+
 
 items:
   # ── Hub (not in a guild) ───────────────────────────────────────
@@ -333,6 +333,15 @@ items:
       - " <gray>and other guild options. "
       - ""
 
+  main-permissions:
+    material: redstone
+    name: "<gradient:#e74c3c:#f1948a><bold>Permissions</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Set which roles can use "
+      - " <gray>each guild permission. "
+      - ""
+
   # ── Settings ───────────────────────────────────────────────────
   settings-shortname:
     material: name_tag
@@ -357,8 +366,8 @@ items:
     name: "<gradient:#5dade2:#aed6f1><bold>Icon</bold></gradient>"
     lore:
       - ""
-      - " <gray>Pick a new guild icon "
-      - " <gray>from your inventory. "
+      - " <gray>Click with an item on your "
+      - " <gray>cursor to change icon. "
       - ""
 
   settings-disband:
@@ -415,6 +424,15 @@ items:
     lore:
       - ""
       - " <gray>Close this menu. "
+      - ""
+
+  storage-locked-slot:
+    material: red_stained_glass_pane
+    name: "<red><bold>Slot Locked</bold></red>"
+    lore:
+      - ""
+      - " <gray>This storage slot is locked. "
+      - " <gray>Unlocks at guild level <yellow><required_level><gray>. "
       - ""
 
   # ── Members ────────────────────────────────────────────────────
@@ -505,7 +523,8 @@ items:
     name: "<gradient:#5dade2:#aed6f1><bold>Set Icon</bold></gradient>"
     lore:
       - ""
-      - " <gray>Pick an item from your inventory. "
+      - " <gray>Click with an item on your "
+      - " <gray>cursor to change icon. "
       - ""
 
   role-editor-set-color:
@@ -551,18 +570,4 @@ items:
       - " <gray>Level: <white><level> "
       - " <gray>XP: <white><xp> "
       - " <gray>Members: <white><members> "
-      - ""
-
-  # ── Icon selection ─────────────────────────────────────────────
-  icon-selection-pane:
-    material: cyan_stained_glass_pane
-    name: " "
-    hide-tooltip: true
-
-  icon-selection-instruction:
-    material: cyan_stained_glass_pane
-    name: "<gradient:#5dade2:#aed6f1><bold>Click an item above to select it</bold></gradient>"
-    lore:
-      - ""
-      - " <gray>Any item from your inventory works. "
       - ""

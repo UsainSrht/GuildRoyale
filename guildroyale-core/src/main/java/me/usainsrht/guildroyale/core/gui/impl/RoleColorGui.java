@@ -6,6 +6,7 @@ import me.usainsrht.guildroyale.api.domain.GuildRole;
 import me.usainsrht.guildroyale.api.domain.RoleColor;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.config.ConfigManager;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.gui.AbstractGui;
 import me.usainsrht.guildroyale.core.gui.GuiItems;
@@ -72,6 +73,9 @@ public final class RoleColorGui extends AbstractGui {
     protected void build() {
         fillBorder(GuiItems.filler());
 
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        ConfigManager configManager = plugin != null ? plugin.getConfigManager() : null;
+
         RoleColor[] colors = RoleColor.values();
         for (int i = 0; i < colors.length && i < DYE_SLOTS.length; i++) {
             RoleColor color = colors[i];
@@ -82,6 +86,7 @@ public final class RoleColorGui extends AbstractGui {
             if (dye == null) dye = Material.WHITE_DYE;
             ItemStack item = new ItemStack(dye);
             ItemMeta meta = item.getItemMeta();
+            String colorDisplayName = configManager != null ? configManager.getRoleColorName(color) : (color.miniMessage() + color.name());
             String nameTpl = color == role.getColor()
                     ? "<green><bold><color> <dark_gray>« selected"
                     : color.miniMessage() + "<bold><color>";
@@ -93,7 +98,7 @@ public final class RoleColorGui extends AbstractGui {
             }
             String resolved = nameTpl
                     .replace("<color_tag>", color.miniMessage())
-                    .replace("<color>", color.name());
+                    .replace("<color>", colorDisplayName);
             meta.displayName(Text.parse(resolved).decoration(TextDecoration.ITALIC, false));
             item.setItemMeta(meta);
             setSlot(slot, item);
@@ -123,8 +128,9 @@ public final class RoleColorGui extends AbstractGui {
                                 .thenAccept(opt -> plugin.getScheduler().runForEntity(player, () -> {
                                     switch (result) {
                                         case ActionResult.Success s -> {
+                                            String colorDisplayName = plugin.getConfigManager().getRoleColorName(color);
                                             plugin.getMessages().send(player, "role-color-updated",
-                                                    Placeholder.unparsed("color", color.name()));
+                                                    Placeholder.parsed("color", colorDisplayName));
                                             if (opt.isPresent()) {
                                                 Guild fresh = opt.get();
                                                 GuildRole updated = fresh.getRole(role.getIndex()).orElse(role);

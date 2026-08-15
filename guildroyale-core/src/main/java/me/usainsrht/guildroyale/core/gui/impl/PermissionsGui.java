@@ -6,6 +6,7 @@ import me.usainsrht.guildroyale.api.domain.GuildRole;
 import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.config.ConfigManager;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.gui.GuiItems;
 import me.usainsrht.guildroyale.core.gui.GuiManager;
@@ -75,7 +76,10 @@ public final class PermissionsGui extends StandardListGui<GuildPermissionKey> {
         int selected = currentMinRole(key);
         List<GuildRole> roles = sortedRoles();
 
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        ConfigManager config = plugin != null ? plugin.getConfigManager() : null;
         GuiConfig gui = GuiItems.config();
+
         String nameTpl = gui != null
                 ? gui.string("permissions.entry-name", "<gradient:#f4d03f:#f9e79f><bold><permission></bold></gradient>")
                 : "<gradient:#f4d03f:#f9e79f><bold><permission></bold></gradient>";
@@ -89,14 +93,14 @@ public final class PermissionsGui extends StandardListGui<GuildPermissionKey> {
                 ? gui.string("permissions.click-hint", " <yellow>Left/Right click to change ")
                 : " <yellow>Left/Right click to change ";
 
-        Material mat = gui != null
-                ? gui.material("permissions.materials.entry", Material.PAPER)
-                : Material.PAPER;
+        Material mat = config != null
+                ? config.getPermissionIcon(key)
+                : (gui != null ? gui.material("permissions.materials.entry", Material.PAPER) : Material.PAPER);
 
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
-        String pretty = prettyName(key);
-        meta.displayName(Text.parse(nameTpl, Placeholder.unparsed("permission", pretty))
+        String pretty = config != null ? config.getPermissionName(key) : prettyName(key);
+        meta.displayName(Text.parse(nameTpl, Placeholder.parsed("permission", pretty))
                 .decoration(TextDecoration.ITALIC, false));
 
         List<Component> lore = new ArrayList<>();

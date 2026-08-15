@@ -65,9 +65,13 @@ public final class GuildMembersGui extends StandardListGui<GuildMember> {
                 ? offlinePlayer.getName()
                 : member.getPlayerId().toString().substring(0, 8);
 
+        var plugin = me.usainsrht.guildroyale.core.GuildRoyalePlugin.getInstance();
+        var resolvers = plugin != null
+                ? plugin.getTagService().memberResolver(member, guild, null)
+                : Placeholder.unparsed("player", name);
+
         ItemStack head = GuiItems.get("members-entry",
-                Placeholder.unparsed("player", name),
-                Placeholder.unparsed("role", member.getRole().getName()),
+                resolvers,
                 Placeholder.unparsed("contribution", String.valueOf(member.getContribution())));
         if (head.getItemMeta() instanceof SkullMeta meta) {
             meta.setOwningPlayer(offlinePlayer);

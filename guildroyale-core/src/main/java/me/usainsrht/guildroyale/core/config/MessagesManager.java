@@ -27,6 +27,7 @@ public final class MessagesManager {
 
     private final JavaPlugin plugin;
     private final Map<String, Message> cache = new HashMap<>();
+    private final Map<String, String> tagTemplates = new HashMap<>();
     private String rawPrefix = "";
 
     public MessagesManager(JavaPlugin plugin) {
@@ -36,6 +37,7 @@ public final class MessagesManager {
 
     public void reload() {
         cache.clear();
+        tagTemplates.clear();
         File file = new File(plugin.getDataFolder(), "messages.yml");
         if (!file.exists()) {
             plugin.saveResource("messages.yml", false);
@@ -52,6 +54,13 @@ public final class MessagesManager {
         }
 
         rawPrefix = config.getString("prefix", "");
+
+        ConfigurationSection tagsSec = config.getConfigurationSection("tags");
+        if (tagsSec != null) {
+            for (String k : tagsSec.getKeys(false)) {
+                tagTemplates.put(k, tagsSec.getString(k, ""));
+            }
+        }
 
         for (String key : config.getKeys(true)) {
             if ("prefix".equals(key)) {
@@ -147,5 +156,10 @@ public final class MessagesManager {
 
     public String prefix() {
         return rawPrefix;
+    }
+
+    public String tagTemplate(String tagKey, String fallback) {
+        String template = tagTemplates.get(tagKey);
+        return (template != null && !template.isBlank()) ? template : fallback;
     }
 }

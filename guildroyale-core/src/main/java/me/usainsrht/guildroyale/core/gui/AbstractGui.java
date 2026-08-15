@@ -89,10 +89,16 @@ public abstract class AbstractGui implements InventoryHolder {
 
     public void open(Player player) {
         try (Text.Scope ignored = Text.push(player)) {
-            this.inventory = Bukkit.createInventory(this, size, title);
-            build();
+            if (this.inventory == null) {
+                this.inventory = Bukkit.createInventory(this, size, title);
+                build();
+            }
             player.openInventory(inventory);
         }
+    }
+
+    public boolean onDrag(org.bukkit.event.inventory.InventoryDragEvent event) {
+        return true;
     }
 
     @Override

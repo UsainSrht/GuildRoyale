@@ -69,19 +69,24 @@ public final class LeaderboardGui extends StandardListGui<Guild> {
     @Override
     protected ItemStack renderItem(Guild guild, int index) {
         int rank = page * pageSize + index + 1;
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        var guildResolver = plugin != null
+                ? plugin.getTagService().guildResolver(guild, null)
+                : Placeholder.unparsed("guild", guild.getName());
+
         ItemStack icon = ItemStackAdapter.fromSerializable(guild.getIcon());
         if (icon.getType().isAir()) {
             icon = GuiItems.get("leaderboard-entry",
+                    guildResolver,
                     Placeholder.unparsed("rank", String.valueOf(rank)),
-                    Placeholder.unparsed("guild", guild.getName()),
                     Placeholder.unparsed("shortname", guild.getShortname()),
                     Placeholder.unparsed("level", String.valueOf(guild.getLevel())),
                     Placeholder.unparsed("xp", String.valueOf(guild.getXp())),
                     Placeholder.unparsed("members", String.valueOf(guild.getMemberCount())));
         } else {
             ItemStack template = GuiItems.get("leaderboard-entry",
+                    guildResolver,
                     Placeholder.unparsed("rank", String.valueOf(rank)),
-                    Placeholder.unparsed("guild", guild.getName()),
                     Placeholder.unparsed("shortname", guild.getShortname()),
                     Placeholder.unparsed("level", String.valueOf(guild.getLevel())),
                     Placeholder.unparsed("xp", String.valueOf(guild.getXp())),

@@ -40,7 +40,7 @@ public final class LeaveSubcommand {
                                 switch (result) {
                                     case ActionResult.Success s ->
                                             plugin.getMessages().send(player, "member-left-self",
-                                                    Placeholder.unparsed("guild", guildName));
+                                                    plugin.getTagService().guildResolver(opt.get(), player));
                                     case ActionResult.Failure f ->
                                             plugin.getMessages().send(player, f.reason());
                                 }

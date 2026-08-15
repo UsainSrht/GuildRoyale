@@ -7,6 +7,7 @@ import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.adapter.ItemStackAdapter;
+import me.usainsrht.guildroyale.core.config.ConfigManager;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.gui.AbstractGui;
 import me.usainsrht.guildroyale.core.gui.GuiItems;
@@ -83,9 +84,13 @@ public final class RoleEditorGui extends AbstractGui {
     protected void build() {
         fillBorder(GuiItems.filler());
 
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        ConfigManager configManager = plugin != null ? plugin.getConfigManager() : null;
+        String colorName = configManager != null ? configManager.getRoleColorName(role.getColor()) : role.getColor().name();
+
         ItemStack info = GuiItems.get("role-editor-info",
                 Placeholder.unparsed("role", role.getName()),
-                Placeholder.unparsed("color", role.getColor().name()),
+                Placeholder.parsed("color", colorName),
                 Placeholder.unparsed("members", String.valueOf(roleMembers.size())));
         ItemStack roleIcon = ItemStackAdapter.fromSerializable(role.getIcon());
         if (!roleIcon.getType().isAir()) {
@@ -102,7 +107,16 @@ public final class RoleEditorGui extends AbstractGui {
         }
 
         if (canManage) {
-            setSlot(setIconSlot, GuiItems.get("role-editor-set-icon"));
+            ItemStack setIconItem = GuiItems.get("role-editor-set-icon");
+            if (!roleIcon.getType().isAir()) {
+                ItemStack iconItem = roleIcon.clone();
+                var meta = setIconItem.getItemMeta();
+                if (meta != null) {
+                    iconItem.setItemMeta(meta);
+                    setIconItem = iconItem;
+                }
+            }
+            setSlot(setIconSlot, setIconItem);
             setSlot(setColorSlot, colorButton());
             setSlot(renameSlot, GuiItems.get("role-editor-rename"));
             if (role.getIndex() != 0) {
@@ -116,8 +130,11 @@ public final class RoleEditorGui extends AbstractGui {
     private ItemStack colorButton() {
         Material dye = Material.matchMaterial(role.getColor().dyeMaterial());
         if (dye == null) dye = Material.WHITE_DYE;
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        ConfigManager configManager = plugin != null ? plugin.getConfigManager() : null;
+        String colorName = configManager != null ? configManager.getRoleColorName(role.getColor()) : role.getColor().name();
         ItemStack template = GuiItems.get("role-editor-set-color",
-                Placeholder.unparsed("color", role.getColor().name()));
+                Placeholder.parsed("color", colorName));
         ItemStack item = new ItemStack(dye);
         var meta = template.getItemMeta();
         if (meta != null) {
@@ -156,7 +173,7 @@ public final class RoleEditorGui extends AbstractGui {
         }
 
         if (slot == setIconSlot) {
-            openIconPicker(player, plugin);
+            changeRoleIcon(player, plugin, event.getCursor());
         } else if (slot == setColorSlot) {
             new RoleColorGui(guild, role, viewer, guiManager, this)
                     .returnTo(p -> reopen(p, guild))
@@ -169,13 +186,16 @@ public final class RoleEditorGui extends AbstractGui {
         return true;
     }
 
-    private void openIconPicker(Player player, GuildRoyalePlugin plugin) {
-        new IconSelectionGui(player, item ->
-                plugin.getScheduler().runAsync(() ->
-                        plugin.getRoleService().setRoleIcon(guild.getId(), player.getUniqueId(), role.getIndex(), item)
-                                .thenCompose(result -> afterMutation(player, plugin, result, "icon-updated"))
-                )
-        ).returnTo(p -> reopen(p, guild)).open(player);
+    private void changeRoleIcon(Player player, GuildRoyalePlugin plugin, ItemStack cursorItem) {
+        if (cursorItem == null || cursorItem.getType().isAir()) {
+            plugin.getMessages().send(player, "icon-invalid");
+            return;
+        }
+        var icon = ItemStackAdapter.toSerializableItemType(cursorItem);
+        plugin.getScheduler().runAsync(() ->
+                plugin.getRoleService().setRoleIcon(guild.getId(), player.getUniqueId(), role.getIndex(), icon)
+                        .thenCompose(result -> afterMutation(player, plugin, result, "icon-updated"))
+        );
     }
 
     private void openRename(Player player, GuildRoyalePlugin plugin) {

@@ -26,6 +26,18 @@ public final class ItemStackAdapter {
     }
 
     /**
+     * Converts a live {@link ItemStack} to a {@link SerializableItemStack} saving ONLY its material type.
+     * Custom display names, lore, enchantments, and amount are omitted.
+     * Returns {@link SerializableItemStack#EMPTY} if {@code item} is null or air.
+     */
+    public static SerializableItemStack toSerializableItemType(ItemStack item) {
+        if (item == null || item.getType().isAir()) {
+            return SerializableItemStack.EMPTY;
+        }
+        return toSerializable(new ItemStack(item.getType()));
+    }
+
+    /**
      * Converts a {@link SerializableItemStack} back to a live {@link ItemStack}.
      * Returns a single piece of {@link Material#AIR} if the input is empty or invalid.
      */

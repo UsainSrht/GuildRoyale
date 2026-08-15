@@ -2,8 +2,10 @@ package me.usainsrht.guildroyale.core.gui.impl;
 
 import me.usainsrht.guildroyale.api.domain.Guild;
 import me.usainsrht.guildroyale.api.domain.GuildMember;
+import me.usainsrht.guildroyale.api.domain.SerializableItemStack;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.adapter.ItemStackAdapter;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.feature.GuildFeature;
 import me.usainsrht.guildroyale.core.gui.AbstractGui;
@@ -13,6 +15,7 @@ import me.usainsrht.guildroyale.core.service.GuildServiceImpl;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.ItemStack;
 
 /**
  * Guild settings: shortname, icon, and disband.
@@ -59,7 +62,18 @@ public final class GuildSettingsGui extends AbstractGui {
 
         setSlot(shortnameSlot, GuiItems.featureItem(guild, GuildFeature.SHORTNAME,
                 "settings-shortname", "settings-shortname-locked"));
-        setSlot(iconSlot, GuiItems.get("settings-icon"));
+
+        ItemStack iconItem = GuiItems.get("settings-icon");
+        ItemStack customIcon = ItemStackAdapter.fromSerializable(guild.getIcon());
+        if (!customIcon.getType().isAir()) {
+            var meta = iconItem.getItemMeta();
+            if (meta != null) {
+                customIcon.setItemMeta(meta);
+                iconItem = customIcon;
+            }
+        }
+        setSlot(iconSlot, iconItem);
+
         setSlot(disbandSlot, GuiItems.get("settings-disband"));
         setSlot(backSlot, navBackItem());
     }
@@ -75,7 +89,7 @@ public final class GuildSettingsGui extends AbstractGui {
         } else if (slot == shortnameSlot) {
             openShortname(player, plugin);
         } else if (slot == iconSlot) {
-            openIcon(player, plugin);
+            changeIcon(player, plugin, event.getCursor());
         } else if (slot == disbandSlot) {
             if (plugin != null) {
                 plugin.getMessages().send(player, "gui-disband-hint");
@@ -116,20 +130,37 @@ public final class GuildSettingsGui extends AbstractGui {
         );
     }
 
-    private void openIcon(Player player, GuildRoyalePlugin plugin) {
+    private void changeIcon(Player player, GuildRoyalePlugin plugin, ItemStack cursorItem) {
         if (plugin == null) return;
-        new IconSelectionGui(player, item ->
-                plugin.getScheduler().runAsync(() ->
-                        plugin.getGuildService().setIcon(guild.getId(), player.getUniqueId(), item)
-                                .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
-                                    switch (result) {
-                                        case ActionResult.Success s ->
-                                                plugin.getMessages().send(player, "icon-updated");
-                                        case ActionResult.Failure f ->
-                                                plugin.getMessages().send(player, f.reason());
-                                    }
-                                }))
-                )
-        ).open(player);
+        if (cursorItem == null || cursorItem.getType().isAir()) {
+            plugin.getMessages().send(player, "icon-invalid");
+            return;
+        }
+        SerializableItemStack icon = ItemStackAdapter.toSerializableItemType(cursorItem);
+        plugin.getScheduler().runAsync(() ->
+                plugin.getGuildService().setIcon(guild.getId(), player.getUniqueId(), icon)
+                        .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
+                            switch (result) {
+                                case ActionResult.Success s -> {
+                                    plugin.getMessages().send(player, "icon-updated");
+                                    reopen(player, plugin);
+                                }
+                                case ActionResult.Failure f ->
+                                        plugin.getMessages().send(player, f.reason());
+                            }
+                        }))
+        );
+    }
+
+    private void reopen(Player player, GuildRoyalePlugin plugin) {
+        plugin.getGuildService().getGuild(guild.getId()).thenAccept(opt ->
+                plugin.getScheduler().runForEntity(player, () -> {
+                    if (opt.isPresent()) {
+                        new GuildSettingsGui(opt.get(), viewer, guiManager)
+                                .returnTo(this)
+                                .open(player);
+                    }
+                })
+        );
     }
 }

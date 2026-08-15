@@ -34,7 +34,7 @@ public final class StorageSubcommand {
         return 1;
     }
 
-    public static void openStorage(Player player) {
+    public static void openStorage(Player player, java.util.function.Consumer<Player> returnTo) {
         GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
         if (plugin == null) return;
 
@@ -60,10 +60,13 @@ public final class StorageSubcommand {
                                 plugin.getMessages().send(player, "no-permission");
                                 return;
                             }
-                            int slots = plugin.getConfigManager().getStorageSlotsForLevel(guild.getLevel());
-                            new GuildStorageGui(plugin, guild, slots).open(player);
+                            plugin.getGuildStorageManager().openStorage(player, guild, 0, returnTo);
                         })
                 )
         );
+    }
+
+    public static void openStorage(Player player) {
+        openStorage(player, null);
     }
 }

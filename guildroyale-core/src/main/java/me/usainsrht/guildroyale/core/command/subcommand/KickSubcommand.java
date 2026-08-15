@@ -40,7 +40,7 @@ public final class KickSubcommand {
         Player target = Bukkit.getPlayerExact(targetName);
         if (target == null) {
             plugin.getMessages().send(player, "player-not-found",
-                    Placeholder.unparsed("player", targetName));
+                    plugin.getTagService().playerResolver(null, targetName, player));
             return 0;
         }
 
@@ -51,15 +51,16 @@ public final class KickSubcommand {
                                 plugin.getMessages().send(player, "not-in-guild"));
                         return java.util.concurrent.CompletableFuture.completedFuture(null);
                     }
+                    var targetMember = opt.get().getMember(target.getUniqueId()).orElse(null);
                     return plugin.getMemberService().kick(opt.get().getId(), player.getUniqueId(), target.getUniqueId())
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s -> {
                                         plugin.getMessages().send(player, "member-kicked",
-                                                Placeholder.unparsed("player", targetName));
+                                                plugin.getTagService().memberResolver(targetMember, opt.get(), player));
                                         plugin.getScheduler().runForEntity(target, () ->
                                                 plugin.getMessages().send(target, "member-kicked-self",
-                                                        Placeholder.unparsed("guild", opt.get().getName())));
+                                                        plugin.getTagService().guildResolver(opt.get(), target)));
                                     }
                                     case ActionResult.Failure f ->
                                             plugin.getMessages().send(player, f.reason());

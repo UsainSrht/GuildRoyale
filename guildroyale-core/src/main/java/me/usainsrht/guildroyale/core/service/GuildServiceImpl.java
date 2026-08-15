@@ -276,6 +276,15 @@ public final class GuildServiceImpl implements GuildService {
                 events.fire(new GuildLevelUpEvent(guild, guild.getLevel() - 1, guild.getLevel()));
             }
 
+            if (levelsGained > 0) {
+                me.usainsrht.guildroyale.core.GuildRoyalePlugin mainPlugin = me.usainsrht.guildroyale.core.GuildRoyalePlugin.getInstance();
+                if (mainPlugin != null && mainPlugin.getGuildStorageManager() != null) {
+                    mainPlugin.getScheduler().runOnMainThread(
+                            () -> mainPlugin.getGuildStorageManager().refreshGuildStorage(guild)
+                    );
+                }
+            }
+
             final int gained = levelsGained;
             return repo.save(guild).thenApply(v -> gained);
         });

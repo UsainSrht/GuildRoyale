@@ -40,7 +40,7 @@ public final class InviteSubcommand {
         Player target = Bukkit.getPlayerExact(targetName);
         if (target == null) {
             plugin.getMessages().send(player, "player-not-found",
-                    Placeholder.unparsed("player", targetName));
+                    plugin.getTagService().playerResolver(null, targetName, player));
             return 0;
         }
 
@@ -56,11 +56,11 @@ public final class InviteSubcommand {
                                 switch (result) {
                                     case ActionResult.Success s -> {
                                         plugin.getMessages().send(player, "invite-sent",
-                                                Placeholder.unparsed("player", targetName));
+                                                plugin.getTagService().playerResolver(target, player));
                                         plugin.getScheduler().runForEntity(target, () ->
                                                 plugin.getMessages().send(target, "invite-received",
-                                                        Placeholder.unparsed("player", player.getName()),
-                                                        Placeholder.unparsed("guild", opt.get().getName())));
+                                                        plugin.getTagService().memberResolver(opt.get().getMember(player.getUniqueId()).orElse(null), opt.get(), target),
+                                                        plugin.getTagService().guildResolver(opt.get(), target)));
                                     }
                                     case ActionResult.Failure f ->
                                             plugin.getMessages().send(player, f.reason());

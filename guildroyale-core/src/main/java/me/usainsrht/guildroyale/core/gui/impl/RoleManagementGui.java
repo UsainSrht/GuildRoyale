@@ -7,12 +7,14 @@ import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.adapter.ItemStackAdapter;
+import me.usainsrht.guildroyale.core.config.ConfigManager;
 import me.usainsrht.guildroyale.core.config.GuiConfig;
 import me.usainsrht.guildroyale.core.gui.GuiItems;
 import me.usainsrht.guildroyale.core.gui.GuiManager;
 import me.usainsrht.guildroyale.core.gui.StandardListGui;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -78,11 +80,19 @@ public final class RoleManagementGui extends StandardListGui<GuildRole> {
         long members = guild.getMembers().stream()
                 .filter(m -> m.getRole().getIndex() == role.getIndex())
                 .count();
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        ConfigManager configManager = plugin != null ? plugin.getConfigManager() : null;
+        String colorName = configManager != null ? configManager.getRoleColorName(role.getColor()) : role.getColor().name();
+
+        TagResolver roleResolver = plugin != null
+                ? plugin.getTagService().roleResolver(role, guild, null)
+                : Placeholder.unparsed("role", role.getName());
+
         ItemStack template = GuiItems.get("roles-entry",
-                Placeholder.unparsed("role", role.getName()),
+                roleResolver,
                 Placeholder.unparsed("index", String.valueOf(role.getIndex())),
                 Placeholder.unparsed("members", String.valueOf(members)),
-                Placeholder.unparsed("color", role.getColor().name()));
+                Placeholder.parsed("color", colorName));
         if (icon.getType().isAir()) {
             Material dye = Material.matchMaterial(role.getColor().dyeMaterial());
             if (dye != null) {

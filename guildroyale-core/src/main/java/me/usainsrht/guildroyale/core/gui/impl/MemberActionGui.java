@@ -57,7 +57,11 @@ public final class MemberActionGui extends AbstractGui {
         if (gui == null) {
             return Component.text("Member: " + name);
         }
-        return gui.title("member-action.title", Placeholder.unparsed("player", name));
+        var plugin = me.usainsrht.guildroyale.core.GuildRoyalePlugin.getInstance();
+        var resolver = plugin != null
+                ? plugin.getTagService().memberResolver(target, null, null)
+                : Placeholder.unparsed("player", name);
+        return gui.title("member-action.title", resolver);
     }
 
     @Override
@@ -67,9 +71,13 @@ public final class MemberActionGui extends AbstractGui {
         var offline = Bukkit.getOfflinePlayer(target.getPlayerId());
         String tName = offline.getName() != null ? offline.getName() : "Unknown";
 
+        var plugin = me.usainsrht.guildroyale.core.GuildRoyalePlugin.getInstance();
+        var resolver = plugin != null
+                ? plugin.getTagService().memberResolver(target, null, null)
+                : Placeholder.unparsed("player", tName);
+
         ItemStack head = GuiItems.get("member-action-head",
-                Placeholder.unparsed("player", tName),
-                Placeholder.unparsed("role", target.getRole().getName()),
+                resolver,
                 Placeholder.unparsed("contribution", String.valueOf(target.getContribution())));
         if (head.getItemMeta() instanceof SkullMeta meta) {
             meta.setOwningPlayer(offline);

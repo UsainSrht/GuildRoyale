@@ -66,9 +66,12 @@ public final class RoleSubcommand {
                     return plugin.getRoleService().createRole(opt.get().getId(), player.getUniqueId(), name)
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
-                                    case ActionResult.Success s ->
-                                            plugin.getMessages().send(player, "role-created",
-                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", name));
+                                    case ActionResult.Success s -> {
+                                        var role = opt.get().getRoles().stream().filter(r -> r.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
+                                        plugin.getMessages().send(player, "role-created",
+                                                role != null ? plugin.getTagService().roleResolver(role, opt.get(), player)
+                                                        : net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", name));
+                                    }
                                     case ActionResult.Failure f ->
                                             plugin.getMessages().send(player, f.reason());
                                 }
@@ -86,12 +89,14 @@ public final class RoleSubcommand {
         plugin.getScheduler().runAsync(() ->
                 plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenCompose(opt -> {
                     if (opt.isEmpty()) return java.util.concurrent.CompletableFuture.completedFuture(null);
+                    var role = opt.get().getRole(index).orElse(null);
                     return plugin.getRoleService().deleteRole(opt.get().getId(), player.getUniqueId(), index)
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s ->
                                             plugin.getMessages().send(player, "role-deleted",
-                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", String.valueOf(index)));
+                                                    role != null ? plugin.getTagService().roleResolver(role, opt.get(), player)
+                                                            : net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", String.valueOf(index)));
                                     case ActionResult.Failure f ->
                                             plugin.getMessages().send(player, f.reason());
                                 }
@@ -109,12 +114,14 @@ public final class RoleSubcommand {
         plugin.getScheduler().runAsync(() ->
                 plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenCompose(opt -> {
                     if (opt.isEmpty()) return java.util.concurrent.CompletableFuture.completedFuture(null);
+                    var role = opt.get().getRole(index).orElse(null);
                     return plugin.getRoleService().renameRole(opt.get().getId(), player.getUniqueId(), index, name)
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s ->
                                             plugin.getMessages().send(player, "role-renamed",
-                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", name));
+                                                    role != null ? plugin.getTagService().roleResolver(role, opt.get(), player)
+                                                            : net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", name));
                                     case ActionResult.Failure f ->
                                             plugin.getMessages().send(player, f.reason());
                                 }
@@ -141,12 +148,14 @@ public final class RoleSubcommand {
         plugin.getScheduler().runAsync(() ->
                 plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenCompose(opt -> {
                     if (opt.isEmpty()) return java.util.concurrent.CompletableFuture.completedFuture(null);
+                    var role = opt.get().getRole(index).orElse(null);
                     return plugin.getRoleService().togglePermission(opt.get().getId(), player.getUniqueId(), index, key)
                             .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
                                 switch (result) {
                                     case ActionResult.Success s ->
                                             plugin.getMessages().send(player, "permission-toggled",
-                                                    net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", String.valueOf(index)));
+                                                    role != null ? plugin.getTagService().roleResolver(role, opt.get(), player)
+                                                            : net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", String.valueOf(index)));
                                     case ActionResult.Failure f ->
                                             plugin.getMessages().send(player, f.reason());
                                 }

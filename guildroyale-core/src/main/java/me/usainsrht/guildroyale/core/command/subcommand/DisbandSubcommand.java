@@ -40,7 +40,7 @@ public final class DisbandSubcommand {
                                 switch (result) {
                                     case ActionResult.Success s ->
                                             plugin.getMessages().send(player, "guild-disbanded",
-                                                    Placeholder.unparsed("guild", guildName));
+                                                    plugin.getTagService().guildResolver(opt.get(), player));
                                     case ActionResult.Failure f ->
                                             plugin.getMessages().send(player, f.reason());
                                 }

@@ -46,9 +46,11 @@ public final class GuildRoyalePlugin extends JavaPlugin {
     private MemberServiceImpl memberService;
     private RoleServiceImpl roleService;
     private LeaderboardServiceImpl leaderboardService;
+    private TagServiceImpl tagService;
 
     private GuiManager guiManager;
     private DialogManager dialogManager;
+    private me.usainsrht.guildroyale.core.gui.GuildStorageManager guildStorageManager;
 
     @Override
     public void onEnable() {
@@ -88,9 +90,11 @@ public final class GuildRoyalePlugin extends JavaPlugin {
         roleService = new RoleServiceImpl(repository);
         leaderboardService = new LeaderboardServiceImpl(repository, configManager, scheduler);
         leaderboardService.startRefreshTask();
+        tagService = new TagServiceImpl(messagesManager);
 
         guiManager = new GuiManager();
         dialogManager = new DialogManager();
+        guildStorageManager = new me.usainsrht.guildroyale.core.gui.GuildStorageManager(this);
 
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new GuiListener(guiManager), this);
@@ -109,6 +113,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         MiniPlaceholdersHook.unregister();
+        if (guildStorageManager != null) guildStorageManager.clear();
         if (guiManager != null) guiManager.clear();
         if (memberService != null) memberService.shutdown();
         if (repository != null) repository.shutdown();
@@ -130,6 +135,9 @@ public final class GuildRoyalePlugin extends JavaPlugin {
     public RoleService getRoleService() { return roleService; }
     public LeaderboardService getLeaderboardService() { return leaderboardService; }
 
+    public me.usainsrht.guildroyale.core.service.TagService getTagService() { return tagService; }
+
     public GuiManager getGuiManager() { return guiManager; }
     public DialogManager getDialogManager() { return dialogManager; }
+    public me.usainsrht.guildroyale.core.gui.GuildStorageManager getGuildStorageManager() { return guildStorageManager; }
 }

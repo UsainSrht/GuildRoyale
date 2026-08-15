@@ -55,7 +55,7 @@ features:
   storage:
     unlock-level: 1
     slots-per-level: 9
-    max-slots: 54
+    max-slots: 135
   bank:
     unlock-level: 2
 
@@ -200,3 +200,65 @@ default-roles:
   - name: Member
     index: 3
     permissions: []
+
+# ── Guild Permissions (customizable display names & icons) ─────────
+permissions:
+  member_management:
+    name: "Member Management"
+    icon: PLAYER_HEAD
+  role_management:
+    name: "Role Management"
+    icon: WRITABLE_BOOK
+  guild_settings:
+    name: "Guild Settings"
+    icon: COMPARATOR
+  icon_change:
+    name: "Icon Change"
+    icon: ITEM_FRAME
+  shortname_change:
+    name: "Shortname Change"
+    icon: NAME_TAG
+  disbandment:
+    name: "Disbandment"
+    icon: BARRIER
+  invite:
+    name: "Invite Members"
+    icon: PAPER
+  kick:
+    name: "Kick Members"
+    icon: IRON_BOOTS
+  badge_manage:
+    name: "Badge Management"
+    icon: NETHER_STAR
+  storage_access:
+    name: "Storage Access"
+    icon: CHEST
+  bank_view:
+    name: "Bank View"
+    icon: SPYGLASS
+  bank_deposit:
+    name: "Bank Deposit"
+    icon: GOLD_NUGGET
+  bank_withdraw:
+    name: "Bank Withdraw"
+    icon: GOLD_INGOT
+
+# ── Role Colors (customizable display names) ────────────────────
+role-colors:
+  white: "<white>White"
+  orange: "<gold>Orange"
+  magenta: "<light_purple>Magenta"
+  light_blue: "<aqua>Light Blue"
+  yellow: "<yellow>Yellow"
+  lime: "<green>Lime"
+  pink: "<#FF69B4>Pink"
+  gray: "<gray>Gray"
+  light_gray: "<gray>Light Gray"
+  cyan: "<dark_aqua>Cyan"
+  purple: "<dark_purple>Purple"
+  blue: "<blue>Blue"
+  brown: "<#8B4513>Brown"
+  green: "<dark_green>Green"
+  red: "<red>Red"
+  black: "<dark_gray>Black"
+

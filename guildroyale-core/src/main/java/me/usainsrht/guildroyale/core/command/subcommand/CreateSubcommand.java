@@ -93,11 +93,14 @@ public final class CreateSubcommand {
                                                 .thenAccept(outcome -> plugin.getScheduler().runForEntity(player, () -> {
                                                     switch (outcome.result()) {
                                                         case ActionResult.Success s -> {
-                                                            plugin.getMessages().send(player, "guild-created",
-                                                                    Placeholder.unparsed("guild", name));
+                                                            Guild createdGuild = outcome.guild();
+                                                            var guildRes = createdGuild != null ? plugin.getTagService().guildResolver(createdGuild, player) : Placeholder.unparsed("guild", name);
+                                                            plugin.getMessages().send(player, "guild-created", guildRes);
+
+                                                            var member = createdGuild != null ? createdGuild.getMember(player.getUniqueId()).orElse(null) : null;
+                                                            var memberRes = (createdGuild != null && member != null) ? plugin.getTagService().memberResolver(member, createdGuild, null) : plugin.getTagService().playerResolver(player, null);
                                                             plugin.getMessages().send(Bukkit.getServer(), "guild-created-broadcast",
-                                                                    Placeholder.unparsed("guild", name),
-                                                                    Placeholder.unparsed("player", player.getName()));
+                                                                    guildRes, memberRes);
                                                             if (outcome.guild() != null) {
                                                                 var memberOpt = outcome.guild().getMember(player.getUniqueId());
                                                                 if (memberOpt.isPresent()) {
