@@ -160,9 +160,10 @@ settings:
   size: 54
   title: "<shadow:#000000FF><gradient:#aab7b8:#d5dbdb><bold>Guild Settings</bold></gradient></shadow>"
   slots:
-    shortname: 20
-    icon: 22
-    disband: 24
+    friendly-fire: 20
+    shortname: 22
+    icon: 24
+    disband: 26
     back: 49
 
 storage:
@@ -343,6 +344,18 @@ items:
       - ""
 
   # ── Settings ───────────────────────────────────────────────────
+  settings-friendly-fire:
+    material: iron_sword
+    name: "<gradient:#e74c3c:#f1948a><bold>Friendly Fire</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Allows or blocks guild members "
+      - " <gray>from damaging each other. "
+      - " <gray>Status: <status> "
+      - ""
+      - " <yellow>Click <gray>to toggle status. "
+      - ""
+
   settings-shortname:
     material: name_tag
     name: "<gradient:#f4d03f:#f9e79f><bold>Shortname</bold></gradient>"

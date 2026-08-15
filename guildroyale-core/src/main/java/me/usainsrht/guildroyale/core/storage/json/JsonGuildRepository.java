@@ -160,6 +160,7 @@ public final class JsonGuildRepository implements GuildRepository {
         obj.addProperty("level", g.getLevel());
         obj.addProperty("xp", g.getXp());
         obj.addProperty("createdAt", g.getCreatedAt().toString());
+        obj.addProperty("friendlyFire", g.isFriendlyFire());
 
         // Icon
         obj.add("icon", serializeIcon(g.getIcon()));
@@ -266,8 +267,10 @@ public final class JsonGuildRepository implements GuildRepository {
             }
         }
 
+        boolean friendlyFire = obj.has("friendlyFire") && obj.get("friendlyFire").getAsBoolean();
+
         return new Guild(id, name, shortname, icon, level, xp, members, roles, createdAt,
-                ownedBadges, activeBadgeId, storage);
+                ownedBadges, activeBadgeId, storage, friendlyFire);
     }
 
     private JsonObject serializeIcon(SerializableItemStack icon) {

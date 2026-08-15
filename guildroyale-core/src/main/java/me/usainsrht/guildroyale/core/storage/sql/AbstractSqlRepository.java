@@ -99,11 +99,13 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     xp           BIGINT NOT NULL DEFAULT 0,
                     created_at   %s NOT NULL,
                     owned_badges TEXT,
-                    active_badge TEXT
+                    active_badge TEXT,
+                    friendly_fire BOOLEAN NOT NULL DEFAULT 0
                 )""".formatted(uuid, guildName, shortname, timestamp));
 
             tryAddColumn(stmt, "guilds", "owned_badges", "TEXT");
             tryAddColumn(stmt, "guilds", "active_badge", "TEXT");
+            tryAddColumn(stmt, "guilds", "friendly_fire", "BOOLEAN NOT NULL DEFAULT 0");
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS guild_roles (
@@ -340,9 +342,10 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                         rs.getString("icon_mat"), rs.getBytes("icon_data"));
                 Set<String> ownedBadges = parseBadges(rs.getString("owned_badges"));
                 String activeBadge = rs.getString("active_badge");
+                boolean friendlyFire = rs.getBoolean("friendly_fire");
                 guild = new Guild(guildId, name, shortname, icon, level, xp,
                         new ArrayList<>(), new ArrayList<>(), createdAt,
-                        ownedBadges, activeBadge, new HashMap<>());
+                        ownedBadges, activeBadge, new HashMap<>(), friendlyFire);
             }
         }
 
@@ -426,8 +429,8 @@ public abstract class AbstractSqlRepository implements GuildRepository {
 
     private void upsertGuild(Connection conn, Guild g) throws SQLException {
         String sql = """
-            INSERT INTO guilds (id, name, shortname, icon_mat, icon_data, level, xp, created_at, owned_badges, active_badge)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO guilds (id, name, shortname, icon_mat, icon_data, level, xp, created_at, owned_badges, active_badge, friendly_fire)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """ + guildUpsertSuffix();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, g.getId().toString());
@@ -440,6 +443,7 @@ public abstract class AbstractSqlRepository implements GuildRepository {
             ps.setString(8, g.getCreatedAt().toString());
             ps.setString(9, String.join(",", g.getOwnedBadges()));
             ps.setString(10, g.getActiveBadgeId());
+            ps.setBoolean(11, g.isFriendlyFire());
             ps.executeUpdate();
         }
     }

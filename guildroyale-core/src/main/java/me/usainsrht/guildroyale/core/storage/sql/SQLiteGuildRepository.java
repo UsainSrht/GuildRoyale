@@ -50,6 +50,7 @@ public final class SQLiteGuildRepository extends AbstractSqlRepository {
                 name=excluded.name, shortname=excluded.shortname,
                 icon_mat=excluded.icon_mat, icon_data=excluded.icon_data,
                 level=excluded.level, xp=excluded.xp,
-                owned_badges=excluded.owned_badges, active_badge=excluded.active_badge""";
+                owned_badges=excluded.owned_badges, active_badge=excluded.active_badge,
+                friendly_fire=excluded.friendly_fire""";
     }
 }

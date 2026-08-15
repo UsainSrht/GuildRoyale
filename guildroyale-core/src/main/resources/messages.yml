@@ -187,6 +187,8 @@ leader-transferred-self:
 must-be-leader: "<red>Only the guild leader can do this."
 
 # ── GUI hints ─────────────────────────────────────────────────────
+friendly-fire-enabled: "<green>Friendly fire has been enabled for your guild."
+friendly-fire-disabled: "<red>Friendly fire has been disabled for your guild."
 gui-settings-hint: "<gray>Use <yellow>/guild shortname</yellow> or <yellow>/guild icon</yellow> to update settings."
 gui-disband-hint: "<red>To disband, run <yellow>/guild disband</yellow> as the leader."
 

@@ -100,6 +100,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
         pm.registerEvents(new GuiListener(guiManager), this);
         pm.registerEvents(new GuildEventListener(logWriter), this);
         pm.registerEvents(new PlayerQuitListener(guiManager), this);
+        pm.registerEvents(new me.usainsrht.guildroyale.core.listener.GuildDamageListener(guildService), this);
 
         if (pm.getPlugin("PlaceholderAPI") != null) {
             new GuildRoyalePlaceholderExpansion(this, guildService, leaderboardService).register();

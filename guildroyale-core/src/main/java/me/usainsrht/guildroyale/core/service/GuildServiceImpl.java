@@ -349,6 +349,45 @@ public final class GuildServiceImpl implements GuildService {
         });
     }
 
+    @Override
+    public CompletableFuture<ActionResult> setFriendlyFire(UUID guildId, UUID requesterId, boolean enabled) {
+        return mutateGuild(guildId, requesterId, GuildPermissionKey.GUILD_SETTINGS, guild -> {
+            guild.setFriendlyFire(enabled);
+        });
+    }
+
+    @Override
+    public CompletableFuture<ActionResult> toggleFriendlyFire(UUID guildId, UUID requesterId) {
+        return repo.findById(guildId).thenCompose(opt -> {
+            if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
+            return setFriendlyFire(guildId, requesterId, !opt.get().isFriendlyFire());
+        });
+    }
+
+    @Override
+    public boolean canHit(UUID player1, UUID player2) {
+        if (player1 == null || player2 == null) return true;
+        if (player1.equals(player2)) return true;
+
+        Optional<Guild> g1Opt = repo.findByMember(player1).join();
+        if (g1Opt.isEmpty()) return true;
+
+        Optional<Guild> g2Opt = repo.findByMember(player2).join();
+        if (g2Opt.isEmpty()) return true;
+
+        Guild g1 = g1Opt.get();
+        Guild g2 = g2Opt.get();
+
+        if (!g1.getId().equals(g2.getId())) return true;
+
+        return g1.isFriendlyFire();
+    }
+
+    public boolean canHit(Player player1, Player player2) {
+        if (player1 == null || player2 == null) return true;
+        return canHit(player1.getUniqueId(), player2.getUniqueId());
+    }
+
     // ── Badges ────────────────────────────────────────────────────────────────
 
     @Override

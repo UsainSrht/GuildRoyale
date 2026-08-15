@@ -49,6 +49,19 @@ public interface GuildService {
     /** Sets a new name. Requires {@link GuildPermissionKey#GUILD_SETTINGS}. */
     CompletableFuture<ActionResult> setName(UUID guildId, UUID requesterId, String name);
 
+    /** Toggles friendly fire setting. Requires {@link GuildPermissionKey#GUILD_SETTINGS}. */
+    CompletableFuture<ActionResult> setFriendlyFire(UUID guildId, UUID requesterId, boolean enabled);
+
+    /** Toggles friendly fire setting. Requires {@link GuildPermissionKey#GUILD_SETTINGS}. */
+    CompletableFuture<ActionResult> toggleFriendlyFire(UUID guildId, UUID requesterId);
+
+    /**
+     * Checks if player 1 (attacker) can hit player 2 (victim).
+     * Returns true if hitting is allowed (e.g. self-hit, different guilds, or friendly fire enabled),
+     * or false if friendly fire is disabled for their shared guild.
+     */
+    boolean canHit(UUID player1, UUID player2);
+
     /** Buys a config-defined badge for the guild (player pays). */
     CompletableFuture<ActionResult> buyBadge(UUID guildId, UUID requesterId, String badgeId);
 

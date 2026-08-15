@@ -21,18 +21,27 @@ public final class Guild {
     private final Set<String> ownedBadges;
     private String activeBadgeId;
     private final Map<Integer, SerializableItemStack> storage;
+    private boolean friendlyFire;
 
     public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
                  int level, long xp, List<GuildMember> members, List<GuildRole> roles,
                  Instant createdAt) {
         this(id, name, shortname, icon, level, xp, members, roles, createdAt,
-                Set.of(), null, Map.of());
+                Set.of(), null, Map.of(), false);
     }
 
     public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
                  int level, long xp, List<GuildMember> members, List<GuildRole> roles,
                  Instant createdAt, Set<String> ownedBadges, String activeBadgeId,
                  Map<Integer, SerializableItemStack> storage) {
+        this(id, name, shortname, icon, level, xp, members, roles, createdAt,
+                ownedBadges, activeBadgeId, storage, false);
+    }
+
+    public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
+                 int level, long xp, List<GuildMember> members, List<GuildRole> roles,
+                 Instant createdAt, Set<String> ownedBadges, String activeBadgeId,
+                 Map<Integer, SerializableItemStack> storage, boolean friendlyFire) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = Objects.requireNonNull(name, "name");
         this.shortname = Objects.requireNonNull(shortname, "shortname");
@@ -55,6 +64,7 @@ public final class Guild {
                 }
             });
         }
+        this.friendlyFire = friendlyFire;
     }
 
     // ── Identity ────────────────────────────────────────────────────────────
@@ -85,6 +95,9 @@ public final class Guild {
     public void addXp(long amount) { this.xp = Math.max(0, this.xp + amount); }
 
     public Instant getCreatedAt() { return createdAt; }
+
+    public boolean isFriendlyFire() { return friendlyFire; }
+    public void setFriendlyFire(boolean friendlyFire) { this.friendlyFire = friendlyFire; }
 
     // ── Badges ───────────────────────────────────────────────────────────────
 
