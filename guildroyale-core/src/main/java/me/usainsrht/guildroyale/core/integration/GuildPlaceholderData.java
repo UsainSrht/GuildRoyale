@@ -62,7 +62,23 @@ public final class GuildPlaceholderData {
                 if (id == null) {
                     yield "";
                 }
-                yield plugin.getConfigManager().getBadgeDisplay(id).orElse("");
+                yield plugin.getConfigManager().getBadge(id)
+                        .map(b -> b.symbol() != null && !b.symbol().isBlank() ? b.symbol() : b.displayName())
+                        .orElse(id);
+            }
+            case "badge_symbol" -> {
+                String id = guild.getActiveBadgeId();
+                if (id == null) {
+                    yield "";
+                }
+                yield plugin.getConfigManager().getBadgeSymbol(id).orElse(id);
+            }
+            case "badge_display" -> {
+                String id = guild.getActiveBadgeId();
+                if (id == null) {
+                    yield "";
+                }
+                yield plugin.getConfigManager().getBadgeDisplay(id).orElse(id);
             }
             case "role" -> guild.getMember(memberId)
                     .map(m -> m.getRole().getName())

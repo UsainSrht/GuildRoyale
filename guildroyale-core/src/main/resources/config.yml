@@ -59,18 +59,27 @@ features:
   bank:
     unlock-level: 2
 
-# ── Badges (MiniMessage display text) ────────────────────────────
-# cost > 0 = buyable with player economy; cost 0 = grant-only
-# grantable = can be given via /guildadmin badge grant
+# ── Badges (MiniMessage display text, symbol & custom icon) ───────
+# grantable: true = grant-only via /guildadmin badge grant (cannot be bought)
+# grantable: false = buyable with economy funds if cost > 0
+# level = minimum guild level required to equip/buy
 badges:
   pioneer:
-    display: "<gold>✦ Pioneer</gold>"
+    display: "<gold>Pioneer</gold>"
+    symbol: "<gold>✦</gold>"
+    icon:
+      material: NETHER_STAR
     cost: 1000.0
-    grantable: true
+    grantable: false
+    level: 1
   veteran:
     display: "<aqua>Veteran</aqua>"
+    symbol: "<aqua>★</aqua>"
+    icon:
+      material: GOLDEN_HELMET
     cost: 0
     grantable: true
+    level: 1
 
 # ── Leaderboard ──────────────────────────────────────────────────
 leaderboard:

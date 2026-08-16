@@ -3,6 +3,8 @@ package me.usainsrht.guildroyale.core.service;
 import me.usainsrht.guildroyale.api.domain.Guild;
 import me.usainsrht.guildroyale.api.domain.GuildMember;
 import me.usainsrht.guildroyale.api.domain.GuildRole;
+import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
+import me.usainsrht.guildroyale.core.config.BadgeDefinition;
 import me.usainsrht.guildroyale.core.config.MessagesManager;
 import me.usainsrht.guildroyale.core.message.Text;
 import net.kyori.adventure.audience.Audience;
@@ -15,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -25,7 +28,7 @@ public final class TagServiceImpl implements TagService {
 
     private static final String DEFAULT_GUILD_TAG = "<hover:show_text:'<gradient:#f0c14b:#ffe08a><bold>Guild Information</bold></gradient><newline><gray>Level: <gold><guild_level></gold><newline><gray>Members: <gold><guild_members></gold> <dark_gray>(<green><guild_members_online> online</green>)</dark_gray><newline><gray>XP: <yellow><guild_xp></yellow><newline><gray>Leader: <gold><guild_leader></gold>'><yellow><guild_name></yellow></hover>";
     private static final String DEFAULT_ROLE_TAG = "<hover:show_text:'<gray>Role Rank: <gold>#<role_index></gold>'><role_color><role_name></role_color></hover>";
-    private static final String DEFAULT_MEMBER_TAG = "<hover:show_text:'<role_color><bold><member_role_name></bold></role_color><newline><gray>Contribution: <gold><member_contribution> XP</gold>'><role_color><member_player_tag></role_color></hover>";
+    private static final String DEFAULT_MEMBER_TAG = "<hover:show_text:'<role_color><bold><member_role_name></bold></role_color><newline><gray>Contribution: <gold><member_contribution> XP</gold>'><role_color><member_player_tag></role_color><guild_badge_symbol></hover>";
     private static final String DEFAULT_PLAYER_TAG = "<player_displayname>";
 
     private final MessagesManager messagesManager;
@@ -102,6 +105,23 @@ public final class TagServiceImpl implements TagService {
         OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(member.getPlayerId());
         String name = offlinePlayer.getName() != null ? offlinePlayer.getName() : member.getPlayerId().toString().substring(0, 8);
 
+        String badgeSymbol = "";
+        String badgeDisplay = "";
+        if (guild != null && guild.getActiveBadgeId() != null) {
+            GuildRoyalePlugin mainPlugin = GuildRoyalePlugin.getInstance();
+            if (mainPlugin != null) {
+                Optional<BadgeDefinition> badgeDef = mainPlugin.getConfigManager().getBadge(guild.getActiveBadgeId());
+                if (badgeDef.isPresent()) {
+                    badgeSymbol = badgeDef.get().symbol();
+                    badgeDisplay = badgeDef.get().displayName();
+                } else {
+                    badgeSymbol = guild.getActiveBadgeId();
+                    badgeDisplay = guild.getActiveBadgeId();
+                }
+            }
+        }
+        String badgeSymbolTag = !badgeSymbol.isBlank() ? " " + badgeSymbol : "";
+
         TagResolver resolvers = TagResolver.resolver(
                 Placeholder.component("member_player_tag", playerTagComp),
                 Placeholder.unparsed("member_name", name),
@@ -109,7 +129,11 @@ public final class TagServiceImpl implements TagService {
                 Placeholder.component("member_role", roleTagComp),
                 Placeholder.unparsed("member_role_name", role.getName()),
                 Placeholder.unparsed("member_contribution", String.valueOf(member.getContribution())),
-                Placeholder.parsed("role_color", role.getColor().miniMessage())
+                Placeholder.parsed("role_color", role.getColor().miniMessage()),
+                Placeholder.parsed("guild_badge_symbol", badgeSymbolTag),
+                Placeholder.parsed("guild_badge", badgeSymbolTag),
+                Placeholder.parsed("guild_badge_display", badgeDisplay),
+                Placeholder.parsed("badge_symbol", badgeSymbolTag)
         );
 
         return Text.parse(template, viewer, resolvers);
@@ -207,7 +231,23 @@ public final class TagServiceImpl implements TagService {
             }
         } catch (Exception ignored) {}
 
-        String badge = guild.getActiveBadgeId() != null ? guild.getActiveBadgeId() : "";
+        String badgeId = guild.getActiveBadgeId();
+        String badgeSymbol = "";
+        String badgeDisplay = "";
+        if (badgeId != null) {
+            GuildRoyalePlugin mainPlugin = GuildRoyalePlugin.getInstance();
+            if (mainPlugin != null) {
+                Optional<BadgeDefinition> badgeDef = mainPlugin.getConfigManager().getBadge(badgeId);
+                if (badgeDef.isPresent()) {
+                    badgeSymbol = badgeDef.get().symbol();
+                    badgeDisplay = badgeDef.get().displayName();
+                } else {
+                    badgeSymbol = badgeId;
+                    badgeDisplay = badgeId;
+                }
+            }
+        }
+        String badgeTag = !badgeSymbol.isBlank() ? badgeSymbol : badgeDisplay;
 
         return TagResolver.resolver(
                 Placeholder.unparsed("guild_name", guild.getName()),
@@ -217,7 +257,9 @@ public final class TagServiceImpl implements TagService {
                 Placeholder.unparsed("guild_members", String.valueOf(guild.getMemberCount())),
                 Placeholder.unparsed("guild_members_online", String.valueOf(onlineCount)),
                 Placeholder.unparsed("guild_leader", leaderName),
-                Placeholder.unparsed("guild_badge", badge)
+                Placeholder.parsed("guild_badge", badgeTag),
+                Placeholder.parsed("guild_badge_symbol", badgeSymbol),
+                Placeholder.parsed("guild_badge_display", badgeDisplay)
         );
     }
 

@@ -73,8 +73,8 @@ public final class BadgeSubcommand {
                                         : badge.isBuyable() ? "<gray>BUY " + service.economy().format(badge.cost())
                                         : "<dark_gray>GRANT-ONLY";
                                 player.sendMessage(Text.parse(
-                                        "<gray>- <white>" + badge.id() + " </white>"
-                                                + badge.display() + " <dark_gray>|</dark_gray> " + status,
+                                        "<gray>- <white>" + badge.id() + "</white> "
+                                                + badge.symbol() + " " + badge.displayName() + " <dark_gray>|</dark_gray> " + status,
                                         player));
                             }
                         })

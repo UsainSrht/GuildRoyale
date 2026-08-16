@@ -3,9 +3,12 @@ package me.usainsrht.guildroyale.core.config;
 import me.usainsrht.guildroyale.api.domain.RoleColor;
 import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.core.feature.GuildFeature;
+import me.usainsrht.itemapi.yamlitem.YamlItem;
+import me.usainsrht.itemapi.yamlitem.YamlParseException;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
@@ -173,7 +176,11 @@ public final class ConfigManager {
     }
 
     public Optional<String> getBadgeDisplay(String id) {
-        return getBadge(id).map(BadgeDefinition::display);
+        return getBadge(id).map(BadgeDefinition::displayName);
+    }
+
+    public Optional<String> getBadgeSymbol(String id) {
+        return getBadge(id).map(BadgeDefinition::symbol);
     }
 
     private Map<String, BadgeDefinition> loadBadges() {
@@ -183,12 +190,37 @@ public final class ConfigManager {
         for (String id : section.getKeys(false)) {
             ConfigurationSection badge = section.getConfigurationSection(id);
             if (badge == null) continue;
-            String display = badge.getString("display", id);
+            String display = badge.getString("display", badge.getString("display-name", id));
+            String symbol = badge.getString("symbol", display);
+            ItemStack icon = parseBadgeIcon(badge);
             double cost = badge.getDouble("cost", 0.0);
             boolean grantable = badge.getBoolean("grantable", true);
-            map.put(id, new BadgeDefinition(id, display, cost, grantable));
+            int level = badge.getInt("level", badge.getInt("required-level", 1));
+            map.put(id, new BadgeDefinition(id, display, symbol, icon, cost, grantable, level));
         }
         return Collections.unmodifiableMap(map);
+    }
+
+    private ItemStack parseBadgeIcon(ConfigurationSection section) {
+        if (section.isConfigurationSection("icon")) {
+            ConfigurationSection iconSec = section.getConfigurationSection("icon");
+            if (iconSec != null) {
+                try {
+                    return YamlItem.parse(iconSec);
+                } catch (YamlParseException ex) {
+                    plugin.getLogger().warning("Failed to parse YamlItem icon for badge '" + section.getName() + "': " + ex.getMessage());
+                }
+            }
+        } else if (section.isString("icon")) {
+            String matStr = section.getString("icon");
+            if (matStr != null) {
+                Material mat = Material.matchMaterial(matStr);
+                if (mat != null) {
+                    return new ItemStack(mat);
+                }
+            }
+        }
+        return new ItemStack(Material.NETHER_STAR);
     }
 
     // ── Leaderboard ──────────────────────────────────────────────

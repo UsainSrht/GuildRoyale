@@ -61,6 +61,7 @@ main:
     leaderboard: 29
     storage: 31
     bank: 33
+    badges: 35
     permissions: 38
     settings: 42
   badge-line: " <gray>Badge: <badge> "
@@ -174,6 +175,63 @@ storage:
     previous: 45
     back: 49
     next: 53
+
+badges:
+  size: 54
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Badges</bold></gradient></shadow>"
+  title-paged: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Badges</bold> page (<page>/<max_page>)</gradient></shadow>"
+  slots:
+    previous: 45
+    back: 49
+    next: 53
+  lore-templates:
+    selected:
+      - ""
+      - " <gray>Symbol: <symbol> "
+      - " <gray>Preview: <player><preview_symbol> "
+      - ""
+      - " <green><bold>ACTIVE</bold></green> "
+      - " <yellow>Click to unequip "
+      - ""
+    owned:
+      - ""
+      - " <gray>Symbol: <symbol> "
+      - " <gray>Preview: <player><preview_symbol> "
+      - ""
+      - " <yellow><bold>OWNED</bold></yellow> "
+      - " <yellow>Click to equip "
+      - ""
+    buyable:
+      - ""
+      - " <gray>Symbol: <symbol> "
+      - " <gray>Preview: <player><preview_symbol> "
+      - ""
+      - " <gray>Cost: <white><cost></white> "
+      - " <yellow>Click to purchase "
+      - ""
+    no-money:
+      - ""
+      - " <gray>Symbol: <symbol> "
+      - " <gray>Preview: <player><preview_symbol> "
+      - ""
+      - " <gray>Cost: <white><cost></white> "
+      - " <red>Cannot afford "
+      - ""
+    not-enough-level:
+      - ""
+      - " <gray>Symbol: <symbol> "
+      - " <gray>Preview: <player><preview_symbol> "
+      - ""
+      - " <red>Locked "
+      - " <gray>Unlocks at guild level <yellow><required_level></yellow> "
+      - ""
+    not-buyable:
+      - ""
+      - " <gray>Symbol: <symbol> "
+      - " <gray>Preview: <player><preview_symbol> "
+      - ""
+      - " <dark_gray>Grant-Only Badge "
+      - ""
 
 
 items:
@@ -319,6 +377,24 @@ items:
   main-bank-locked:
     material: gold_ingot
     name: "<gradient:#7f8c8d:#bdc3c7><bold>Bank</bold></gradient>"
+    lore:
+      - ""
+      - " <red>Locked "
+      - " <gray>Unlocks at guild level <yellow><level><gray>. "
+      - ""
+
+  main-badges:
+    material: nether_star
+    name: "<gradient:#f4d03f:#f9e79f><bold>Badges</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>View, purchase, and equip "
+      - " <gray>guild badges. "
+      - ""
+
+  main-badges-locked:
+    material: nether_star
+    name: "<gradient:#7f8c8d:#bdc3c7><bold>Badges</bold></gradient>"
     lore:
       - ""
       - " <red>Locked "
