@@ -49,6 +49,10 @@ final class MiniPlaceholdersAccess {
                         (player, queue, ctx) -> tag(data.resolve(player.getUniqueId(), "guild_xp")))
                 .audiencePlaceholder(Player.class, "guild_members",
                         (player, queue, ctx) -> tag(data.resolve(player.getUniqueId(), "guild_members")))
+                .audiencePlaceholder(Player.class, "guild_leader",
+                        (player, queue, ctx) -> tag(data.resolve(player.getUniqueId(), "guild_leader")))
+                .audiencePlaceholder(Player.class, "leader",
+                        (player, queue, ctx) -> tag(data.resolve(player.getUniqueId(), "leader")))
                 .audiencePlaceholder(Player.class, "role",
                         (player, queue, ctx) -> tag(data.resolve(player.getUniqueId(), "role")))
                 .audiencePlaceholder(Player.class, "badge",

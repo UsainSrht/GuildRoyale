@@ -1,10 +1,13 @@
 package me.usainsrht.guildroyale.core.config;
 
+import me.usainsrht.guildroyale.api.domain.GuildRole;
 import me.usainsrht.guildroyale.api.domain.RoleColor;
+import me.usainsrht.guildroyale.api.domain.SerializableItemStack;
 import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.core.feature.GuildFeature;
 import me.usainsrht.itemapi.yamlitem.YamlItem;
 import me.usainsrht.itemapi.yamlitem.YamlParseException;
+import me.usainsrht.guildroyale.core.adapter.ItemStackAdapter;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -19,13 +22,20 @@ import java.util.*;
  */
 public final class ConfigManager {
 
-    public record PermissionDisplay(String name, Material icon) {}
+    public record PermissionDisplay(String name, Material icon, int defaultIndex) {
+        public PermissionDisplay(String name, Material icon) {
+            this(name, icon, 0);
+        }
+    }
+
+    public record DefaultRoleDefinition(String name, int index, RoleColor color, SerializableItemStack icon) {}
 
     private final JavaPlugin plugin;
     private FileConfiguration cfg;
     private Map<String, BadgeDefinition> badges = Map.of();
     private Map<GuildPermissionKey, PermissionDisplay> permissions = Map.of();
     private Map<RoleColor, String> roleColorNames = Map.of();
+    private List<DefaultRoleDefinition> defaultRoles = List.of();
 
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -38,6 +48,7 @@ public final class ConfigManager {
         badges = loadBadges();
         permissions = loadPermissions();
         roleColorNames = loadRoleColorNames();
+        defaultRoles = loadDefaultRoles();
     }
 
     // ── Storage ─────────────────────────────────────────────────
@@ -259,6 +270,41 @@ public final class ConfigManager {
         return Material.PAPER;
     }
 
+    public int getPermissionDefaultIndex(GuildPermissionKey key) {
+        if (key == null) return 0;
+        PermissionDisplay display = permissions.get(key);
+        if (display != null) {
+            return display.defaultIndex();
+        }
+        return fallbackDefaultPermissionIndex(key);
+    }
+
+    public List<DefaultRoleDefinition> getDefaultRoleDefinitions() {
+        return defaultRoles;
+    }
+
+    /**
+     * Creates the initial list of {@link GuildRole}s for a new guild based on config settings.
+     * Roles carry permissions based on whether the role's index is <= the permission's default index.
+     */
+    public List<GuildRole> createDefaultRoles() {
+        List<DefaultRoleDefinition> defs = defaultRoles;
+        if (defs.isEmpty()) {
+            defs = defaultFallbackRoles();
+        }
+        List<GuildRole> roles = new ArrayList<>();
+        for (DefaultRoleDefinition def : defs) {
+            Set<GuildPermissionKey> rolePerms = EnumSet.noneOf(GuildPermissionKey.class);
+            for (GuildPermissionKey permKey : GuildPermissionKey.values()) {
+                if (def.index() == 0 || def.index() <= getPermissionDefaultIndex(permKey)) {
+                    rolePerms.add(permKey);
+                }
+            }
+            roles.add(new GuildRole(def.name(), def.index(), rolePerms, def.icon(), def.color()));
+        }
+        return roles;
+    }
+
     public String getRoleColorName(RoleColor color) {
         if (color == null) return "";
         return roleColorNames.getOrDefault(color, color.miniMessage() + color.name());
@@ -276,10 +322,74 @@ public final class ConfigManager {
                 String name = perm.getString("name");
                 String iconRaw = perm.getString("icon");
                 Material icon = iconRaw != null ? Material.matchMaterial(iconRaw) : null;
-                map.put(permKey, new PermissionDisplay(name, icon));
+                int defaultIndex = perm.getInt("index", fallbackDefaultPermissionIndex(permKey));
+                map.put(permKey, new PermissionDisplay(name, icon, defaultIndex));
             } catch (IllegalArgumentException ignored) {}
         }
         return Collections.unmodifiableMap(map);
+    }
+
+    private List<DefaultRoleDefinition> loadDefaultRoles() {
+        List<Map<?, ?>> list = cfg.getMapList("default-roles");
+        if (list.isEmpty()) {
+            return defaultFallbackRoles();
+        }
+        List<DefaultRoleDefinition> result = new ArrayList<>();
+        for (Map<?, ?> map : list) {
+            Object nameObj = map.get("name");
+            Object indexObj = map.get("index");
+            if (nameObj == null || indexObj == null) continue;
+
+            String name = nameObj.toString();
+            int index;
+            if (indexObj instanceof Number n) {
+                index = n.intValue();
+            } else {
+                try {
+                    index = Integer.parseInt(indexObj.toString());
+                } catch (NumberFormatException ignored) {
+                    continue;
+                }
+            }
+
+            RoleColor color = RoleColor.WHITE;
+            Object colorObj = map.get("color");
+            if (colorObj != null) {
+                color = RoleColor.fromString(colorObj.toString()).orElse(RoleColor.WHITE);
+            }
+
+            SerializableItemStack icon = SerializableItemStack.EMPTY;
+            Object iconObj = map.get("icon");
+            if (iconObj != null) {
+                Material mat = Material.matchMaterial(iconObj.toString());
+                if (mat != null) {
+                    icon = ItemStackAdapter.toSerializable(new ItemStack(mat));
+                }
+            }
+
+            result.add(new DefaultRoleDefinition(name, index, color, icon));
+        }
+        if (result.isEmpty()) {
+            return defaultFallbackRoles();
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    private List<DefaultRoleDefinition> defaultFallbackRoles() {
+        return List.of(
+                new DefaultRoleDefinition("Leader", 0, RoleColor.YELLOW, SerializableItemStack.EMPTY),
+                new DefaultRoleDefinition("Co-Leader", 1, RoleColor.ORANGE, SerializableItemStack.EMPTY),
+                new DefaultRoleDefinition("Helper", 2, RoleColor.LIME, SerializableItemStack.EMPTY),
+                new DefaultRoleDefinition("Member", 3, RoleColor.GRAY, SerializableItemStack.EMPTY)
+        );
+    }
+
+    private static int fallbackDefaultPermissionIndex(GuildPermissionKey key) {
+        return switch (key) {
+            case ROLE_MANAGEMENT, DISBANDMENT -> 0;
+            case MEMBER_MANAGEMENT, KICK, GUILD_SETTINGS, ICON_CHANGE, SHORTNAME_CHANGE, BADGE_MANAGE, BANK_WITHDRAW -> 1;
+            case INVITE, STORAGE_ACCESS, BANK_VIEW, BANK_DEPOSIT -> 2;
+        };
     }
 
     private Map<RoleColor, String> loadRoleColorNames() {

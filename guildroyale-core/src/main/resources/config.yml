@@ -183,74 +183,76 @@ commands:
           revoke: revoke
 
 # ── Default roles ────────────────────────────────────────────────
-# Index 0 is always Leader (full permissions, cannot be deleted or customised here)
+# Configure default role names, indexes, and colors for newly created guilds
 default-roles:
+  - name: Leader
+    index: 0
+    color: YELLOW
   - name: Co-Leader
     index: 1
-    permissions:
-      - MEMBER_MANAGEMENT
-      - INVITE
-      - KICK
-      - GUILD_SETTINGS
-      - ICON_CHANGE
-      - SHORTNAME_CHANGE
-      - BADGE_MANAGE
-      - STORAGE_ACCESS
-      - BANK_VIEW
-      - BANK_DEPOSIT
-      - BANK_WITHDRAW
+    color: ORANGE
   - name: Helper
     index: 2
-    permissions:
-      - INVITE
-      - STORAGE_ACCESS
-      - BANK_VIEW
-      - BANK_DEPOSIT
+    color: LIME
   - name: Member
     index: 3
-    permissions: []
+    color: GRAY
 
-# ── Guild Permissions (customizable display names & icons) ─────────
+# ── Guild Permissions (customizable display names, icons & default role index) ──
+# index: default minimum role index required for this permission (roles with role index <= permission index will have this permission by default)
 permissions:
   member_management:
     name: "Member Management"
     icon: PLAYER_HEAD
+    index: 1
   role_management:
     name: "Role Management"
     icon: WRITABLE_BOOK
+    index: 0
   guild_settings:
     name: "Guild Settings"
     icon: COMPARATOR
+    index: 1
   icon_change:
     name: "Icon Change"
     icon: ITEM_FRAME
+    index: 1
   shortname_change:
     name: "Shortname Change"
     icon: NAME_TAG
+    index: 1
   disbandment:
     name: "Disbandment"
     icon: BARRIER
+    index: 0
   invite:
     name: "Invite Members"
     icon: PAPER
+    index: 2
   kick:
     name: "Kick Members"
     icon: IRON_BOOTS
+    index: 1
   badge_manage:
     name: "Badge Management"
     icon: NETHER_STAR
+    index: 1
   storage_access:
     name: "Storage Access"
     icon: CHEST
+    index: 2
   bank_view:
     name: "Bank View"
     icon: SPYGLASS
+    index: 2
   bank_deposit:
     name: "Bank Deposit"
     icon: GOLD_NUGGET
+    index: 2
   bank_withdraw:
     name: "Bank Withdraw"
     icon: GOLD_INGOT
+    index: 1
 
 # ── Role Colors (customizable display names) ────────────────────
 role-colors:

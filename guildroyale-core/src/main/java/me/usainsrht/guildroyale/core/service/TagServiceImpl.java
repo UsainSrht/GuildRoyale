@@ -27,8 +27,8 @@ import java.util.UUID;
 public final class TagServiceImpl implements TagService {
 
     private static final String DEFAULT_GUILD_TAG = "<hover:show_text:'<gradient:#f0c14b:#ffe08a><bold>Guild Information</bold></gradient><newline><gray>Level: <gold><guild_level></gold><newline><gray>Members: <gold><guild_members></gold> <dark_gray>(<green><guild_members_online> online</green>)</dark_gray><newline><gray>XP: <yellow><guild_xp></yellow><newline><gray>Leader: <gold><guild_leader></gold>'><yellow><guild_name></yellow></hover>";
-    private static final String DEFAULT_ROLE_TAG = "<hover:show_text:'<gray>Role Rank: <gold>#<role_index></gold>'><role_color><role_name></role_color></hover>";
-    private static final String DEFAULT_MEMBER_TAG = "<hover:show_text:'<role_color><bold><member_role_name></bold></role_color><newline><gray>Contribution: <gold><member_contribution> XP</gold>'><role_color><member_player_tag></role_color><guild_badge_symbol></hover>";
+    private static final String DEFAULT_ROLE_TAG = "<hover:show_text:'<gray>Role Rank: <gold>#<role_index></gold>'><role_color><role_name></hover>";
+    private static final String DEFAULT_MEMBER_TAG = "<hover:show_text:'<role_color><bold><member_role_name></bold><newline><gray>Contribution: <gold><member_contribution> XP</gold>'><role_color><member_player_tag><guild_badge_symbol></hover>";
     private static final String DEFAULT_PLAYER_TAG = "<player_displayname>";
 
     private final MessagesManager messagesManager;
@@ -62,7 +62,7 @@ public final class TagServiceImpl implements TagService {
         if (playerId == null) {
             return Component.text(name != null ? name : "");
         }
-        Player onlinePlayer = Bukkit.getPlayer(playerId);
+        Player onlinePlayer = getOnlinePlayer(playerId);
         if (onlinePlayer != null) {
             return renderPlayerTag(onlinePlayer, viewer);
         }
@@ -102,8 +102,7 @@ public final class TagServiceImpl implements TagService {
         GuildRole role = member.getRole();
         Component roleTagComp = renderRoleTag(role, guild, viewer);
 
-        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(member.getPlayerId());
-        String name = offlinePlayer.getName() != null ? offlinePlayer.getName() : member.getPlayerId().toString().substring(0, 8);
+        String name = getOfflinePlayerName(member.getPlayerId());
 
         String badgeSymbol = "";
         String badgeDisplay = "";
@@ -145,13 +144,10 @@ public final class TagServiceImpl implements TagService {
             return TagResolver.empty();
         }
         Component guildTagComp = renderGuildTag(guild, viewer);
+        TagResolver inner = buildGuildInnerResolvers(guild, viewer);
         return TagResolver.resolver(
                 Placeholder.component("guild", guildTagComp),
-                Placeholder.unparsed("guild_name", guild.getName()),
-                Placeholder.unparsed("guild_shortname", guild.getShortname()),
-                Placeholder.unparsed("guild_level", String.valueOf(guild.getLevel())),
-                Placeholder.unparsed("guild_xp", String.valueOf(guild.getXp())),
-                Placeholder.unparsed("guild_members", String.valueOf(guild.getMemberCount()))
+                inner
         );
     }
 
@@ -174,14 +170,24 @@ public final class TagServiceImpl implements TagService {
             return TagResolver.empty();
         }
         Component memberTagComp = renderMemberTag(member, guild, viewer);
-        OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(member.getPlayerId());
-        String name = offlinePlayer.getName() != null ? offlinePlayer.getName() : member.getPlayerId().toString().substring(0, 8);
+        GuildRole role = member.getRole();
+        Component roleTagComp = renderRoleTag(role, guild, viewer);
+        String name = getOfflinePlayerName(member.getPlayerId());
+
         return TagResolver.resolver(
                 Placeholder.component("member", memberTagComp),
                 Placeholder.component("player", memberTagComp),
+                Placeholder.component("leader", memberTagComp),
+                Placeholder.component("role", roleTagComp),
+                Placeholder.component("member_role", roleTagComp),
+                Placeholder.unparsed("role_name", role.getName()),
+                Placeholder.unparsed("member_role_name", role.getName()),
+                Placeholder.parsed("role_color", role.getColor().miniMessage()),
                 Placeholder.unparsed("member_name", name),
                 Placeholder.unparsed("player_name", name),
-                Placeholder.unparsed("member_contribution", String.valueOf(member.getContribution()))
+                Placeholder.unparsed("leader_name", name),
+                Placeholder.unparsed("member_contribution", String.valueOf(member.getContribution())),
+                Placeholder.unparsed("contribution", String.valueOf(member.getContribution()))
         );
     }
 
@@ -217,7 +223,7 @@ public final class TagServiceImpl implements TagService {
 
     private TagResolver buildGuildInnerResolvers(Guild guild, @Nullable Audience viewer) {
         long onlineCount = guild.getMembers().stream()
-                .filter(m -> Bukkit.getPlayer(m.getPlayerId()) != null)
+                .filter(m -> getOnlinePlayer(m.getPlayerId()) != null)
                 .count();
 
         String leaderName = "Unknown";
@@ -226,8 +232,7 @@ public final class TagServiceImpl implements TagService {
                     .filter(m -> m.getRole().getIndex() == 0)
                     .findFirst().orElse(null);
             if (leader != null) {
-                OfflinePlayer op = Bukkit.getOfflinePlayer(leader.getPlayerId());
-                leaderName = op.getName() != null ? op.getName() : leader.getPlayerId().toString().substring(0, 8);
+                leaderName = getOfflinePlayerName(leader.getPlayerId());
             }
         } catch (Exception ignored) {}
 
@@ -257,6 +262,7 @@ public final class TagServiceImpl implements TagService {
                 Placeholder.unparsed("guild_members", String.valueOf(guild.getMemberCount())),
                 Placeholder.unparsed("guild_members_online", String.valueOf(onlineCount)),
                 Placeholder.unparsed("guild_leader", leaderName),
+                Placeholder.unparsed("leader", leaderName),
                 Placeholder.parsed("guild_badge", badgeTag),
                 Placeholder.parsed("guild_badge_symbol", badgeSymbol),
                 Placeholder.parsed("guild_badge_display", badgeDisplay)
@@ -269,5 +275,26 @@ public final class TagServiceImpl implements TagService {
                 Placeholder.parsed("role_color", role.getColor().miniMessage()),
                 Placeholder.unparsed("role_index", String.valueOf(role.getIndex()))
         );
+    }
+
+    private Player getOnlinePlayer(UUID playerId) {
+        try {
+            if (Bukkit.getServer() != null) {
+                return Bukkit.getPlayer(playerId);
+            }
+        } catch (Throwable ignored) {}
+        return null;
+    }
+
+    private String getOfflinePlayerName(UUID playerId) {
+        try {
+            if (Bukkit.getServer() != null) {
+                OfflinePlayer op = Bukkit.getOfflinePlayer(playerId);
+                if (op != null && op.getName() != null) {
+                    return op.getName();
+                }
+            }
+        } catch (Throwable ignored) {}
+        return playerId.toString().substring(0, 8);
     }
 }

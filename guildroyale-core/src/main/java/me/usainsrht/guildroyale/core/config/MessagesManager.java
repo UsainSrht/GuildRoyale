@@ -1,7 +1,7 @@
 package me.usainsrht.guildroyale.core.config;
 
-import me.usainsrht.guildroyale.core.message.Message;
 import me.usainsrht.guildroyale.core.message.Text;
+import me.usainsrht.yamlmessage.YamlMessage;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
@@ -15,10 +15,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Loads {@code messages.yml} into {@link Message} objects.
+ * Loads {@code messages.yml} into {@link YamlMessage} objects.
  *
  * <p>Each key may be a plain MiniMessage string (single chat line) or a full
  * map with {@code chat}, {@code sound}, {@code actionbar}, and {@code title}.
@@ -26,7 +27,7 @@ import java.util.Map;
 public final class MessagesManager {
 
     private final JavaPlugin plugin;
-    private final Map<String, Message> cache = new HashMap<>();
+    private final Map<String, YamlMessage> cache = new HashMap<>();
     private final Map<String, String> tagTemplates = new HashMap<>();
     private String rawPrefix = "";
 
@@ -38,6 +39,9 @@ public final class MessagesManager {
     public void reload() {
         cache.clear();
         tagTemplates.clear();
+        if (plugin == null) {
+            return;
+        }
         File file = new File(plugin.getDataFolder(), "messages.yml");
         if (!file.exists()) {
             plugin.saveResource("messages.yml", false);
@@ -74,7 +78,7 @@ public final class MessagesManager {
                 }
                 // Skip intermediate parents that only contain child sections without message fields
                 if (isMessageSection(section)) {
-                    cache.put(key, Message.parse(section));
+                    cache.put(key, YamlMessage.parse(section));
                 }
                 continue;
             }
@@ -85,7 +89,7 @@ public final class MessagesManager {
             }
             Object value = config.get(key);
             if (value != null) {
-                cache.put(key, Message.parse(value));
+                cache.put(key, YamlMessage.parse(value));
             }
         }
     }
@@ -105,8 +109,8 @@ public final class MessagesManager {
         return idx < 0 ? null : key.substring(0, idx);
     }
 
-    public Message message(String key) {
-        return cache.getOrDefault(key, Message.chat("<red>Missing message: " + key));
+    public YamlMessage message(String key) {
+        return cache.getOrDefault(key, YamlMessage.chat("<red>Missing message: " + key));
     }
 
     /** Sends the message with the configured prefix applied to chat lines. */
@@ -124,8 +128,8 @@ public final class MessagesManager {
      * Prefer {@link #send(Audience, String, TagResolver...)} for full feedback.
      */
     public Component prefixed(Audience audience, String key, TagResolver... resolvers) {
-        Message msg = message(key);
-        var chat = msg.chat();
+        YamlMessage msg = message(key);
+        List<String> chat = msg.chat();
         String line = (chat == null || chat.isEmpty())
                 ? "<red>Missing message: " + key
                 : chat.getFirst();
@@ -139,15 +143,20 @@ public final class MessagesManager {
 
     /** First chat line without prefix. */
     public Component get(Audience audience, String key, TagResolver... resolvers) {
-        return message(key).firstChatComponent(audience, resolvers);
+        YamlMessage msg = message(key);
+        List<String> chat = msg.chat();
+        if (chat == null || chat.isEmpty()) {
+            return Component.empty();
+        }
+        return Text.parse(chat.getFirst(), audience, resolvers);
     }
 
     public Component get(String key, TagResolver... resolvers) {
-        return message(key).firstChatComponent(resolvers);
+        return get(null, key, resolvers);
     }
 
     public String getRaw(String key) {
-        var chat = message(key).chat();
+        List<String> chat = message(key).chat();
         if (chat == null || chat.isEmpty()) {
             return "Missing message: " + key;
         }

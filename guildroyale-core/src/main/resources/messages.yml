@@ -24,8 +24,8 @@ prefix: "<dark_gray>[<gradient:gold:yellow>GuildRoyale</gradient>]</dark_gray> "
 # MiniPlaceholders v3 (global & audience), and custom placeholders.
 tags:
   guild: "<hover:show_text:'<gradient:#f0c14b:#ffe08a><bold>Guild Information</bold></gradient><newline><gray>Level: <gold><guild_level></gold><newline><gray>Members: <gold><guild_members></gold> <dark_gray>(<green><guild_members_online> online</green>)</dark_gray><newline><gray>XP: <yellow><guild_xp></yellow><newline><gray>Leader: <gold><guild_leader></gold>'><yellow><guild_name></yellow></hover>"
-  role: "<hover:show_text:'<gray>Role Rank: <gold>#<role_index></gold>'><role_color><role_name></role_color></hover>"
-  member: "<hover:show_text:'<role_color><bold><member_role_name></bold></role_color><newline><gray>Contribution: <gold><member_contribution> XP</gold>'><role_color><member_player_tag></role_color><guild_badge_symbol></hover>"
+  role: "<hover:show_text:'<gray>Role Rank: <gold>#<role_index></gold>'><role_color><role_name></hover>"
+  member: "<hover:show_text:'<role_color><bold><member_role_name></bold><newline><gray>Contribution: <gold><member_contribution> XP</gold>'><role_color><member_player_tag><guild_badge_symbol></hover>"
   player: "<player_displayname>"
 
 # ── General ──────────────────────────────────────────────────────
@@ -197,7 +197,7 @@ gui-disband-hint: "<red>To disband, run <yellow>/guild disband</yellow> as the l
 
 # ── Leaderboard ───────────────────────────────────────────────────
 leaderboard-header: "<gold>━━━━━ Guild Leaderboard (Page <page>/<total_pages>) ━━━━━"
-leaderboard-entry: "<gray>#<level> <gold><guild></gold> — Lv.<gold><level></gold>"
+leaderboard-entry: "<gray>#<rank> <gold><guild></gold> — Lv.<gold><level></gold>"
 leaderboard-empty: "<yellow>No guilds found."
 leaderboard-invalid-page: "<red>Invalid page number."
 

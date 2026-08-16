@@ -120,7 +120,8 @@ Requires `guildroyale.admin`.
 | `leaderboard` | Page size and cache refresh interval |
 | `invite` | Invite expiry |
 | `commands` | Command and subcommand labels and aliases |
-| `default-roles` | Roles given to a new guild, and their permissions |
+| `default-roles` | Default roles given to a new guild (including Leader index 0, names, colors, etc.) |
+| `permissions` | Permission display names, icons, and default minimum role index |
 
 `messages.yml` holds every player-facing string in
 [MiniMessage](https://docs.advntr.dev/minimessage/format.html) format. A message may be a
@@ -140,7 +141,7 @@ lores — plus the text of the input dialogs.
 ### Role permissions
 
 Roles are ordered by index; index `0` is always the Leader and always has every
-permission. A member may only act on members of a strictly higher index.
+permission. Default role permissions are mapped per-permission via `index` in `config.yml` (`role index <= permission index`). A member may only act on members of a strictly higher index.
 
 Available keys: `MEMBER_MANAGEMENT`, `INVITE`, `KICK`, `ROLE_MANAGEMENT`, `GUILD_SETTINGS`,
 `ICON_CHANGE`, `SHORTNAME_CHANGE`, `BADGE_MANAGE`, `STORAGE_ACCESS`, `BANK_VIEW`,

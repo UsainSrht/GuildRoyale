@@ -31,7 +31,7 @@ public final class MemberActionGui extends AbstractGui {
     private final int backSlot;
 
     public MemberActionGui(Guild guild, GuildMember target, GuildMember viewer, GuiManager guiManager) {
-        super(size(), title(target));
+        super(size(), title(guild, target));
         this.guild = guild;
         this.target = target;
         this.viewer = viewer;
@@ -50,7 +50,7 @@ public final class MemberActionGui extends AbstractGui {
         return gui != null ? gui.size("member-action.size", 54) : 54;
     }
 
-    private static Component title(GuildMember target) {
+    private static Component title(Guild guild, GuildMember target) {
         String name = Bukkit.getOfflinePlayer(target.getPlayerId()).getName();
         if (name == null) name = "Unknown";
         GuiConfig gui = GuiItems.config();
@@ -59,7 +59,7 @@ public final class MemberActionGui extends AbstractGui {
         }
         var plugin = me.usainsrht.guildroyale.core.GuildRoyalePlugin.getInstance();
         var resolver = plugin != null
-                ? plugin.getTagService().memberResolver(target, null, null)
+                ? plugin.getTagService().memberResolver(target, guild, null)
                 : Placeholder.unparsed("player", name);
         return gui.title("member-action.title", resolver);
     }
@@ -73,7 +73,7 @@ public final class MemberActionGui extends AbstractGui {
 
         var plugin = me.usainsrht.guildroyale.core.GuildRoyalePlugin.getInstance();
         var resolver = plugin != null
-                ? plugin.getTagService().memberResolver(target, null, null)
+                ? plugin.getTagService().memberResolver(target, guild, null)
                 : Placeholder.unparsed("player", tName);
 
         ItemStack head = GuiItems.get("member-action-head",

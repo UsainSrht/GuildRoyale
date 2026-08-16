@@ -80,9 +80,22 @@ public final class GuildPlaceholderData {
                 }
                 yield plugin.getConfigManager().getBadgeDisplay(id).orElse(id);
             }
-            case "role" -> guild.getMember(memberId)
+            case "guild_leader", "leader" -> {
+                Optional<me.usainsrht.guildroyale.api.domain.GuildMember> leaderOpt = guild.getMembers().stream()
+                        .filter(m -> m.getRole().getIndex() == 0).findFirst();
+                if (leaderOpt.isEmpty()) yield "Unknown";
+                org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(leaderOpt.get().getPlayerId());
+                yield op.getName() != null ? op.getName() : leaderOpt.get().getPlayerId().toString().substring(0, 8);
+            }
+            case "role", "role_name", "member_role_name" -> guild.getMember(memberId)
                     .map(m -> m.getRole().getName())
                     .orElse("");
+            case "role_color" -> guild.getMember(memberId)
+                    .map(m -> m.getRole().getColor().miniMessage())
+                    .orElse("");
+            case "contribution", "member_contribution" -> guild.getMember(memberId)
+                    .map(m -> String.valueOf(m.getContribution()))
+                    .orElse("0");
             default -> null;
         };
     }

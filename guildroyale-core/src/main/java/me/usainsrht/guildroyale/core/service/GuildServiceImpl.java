@@ -109,16 +109,17 @@ public final class GuildServiceImpl implements GuildService {
 
                         UUID guildId = UUID.randomUUID();
                         Instant now = Instant.now();
-                        GuildRole leaderRole = GuildRole.createLeader();
-                        GuildRole coLeaderRole = GuildRole.createCoLeader();
-                        GuildRole helperRole = GuildRole.createHelper();
-                        GuildRole memberRole = GuildRole.createMember();
+                        List<GuildRole> defaultRoles = config.createDefaultRoles();
+                        GuildRole leaderRole = defaultRoles.stream()
+                                .filter(r -> r.getIndex() == 0)
+                                .findFirst()
+                                .orElseGet(GuildRole::createLeader);
 
                         GuildMember owner = new GuildMember(ownerPlayerId, leaderRole, now, 0L);
                         Guild guild = new Guild(guildId, name, finalShortname, SerializableItemStack.EMPTY,
                                 GuildLevel.MIN_LEVEL, 0L,
                                 List.of(owner),
-                                List.of(leaderRole, coLeaderRole, helperRole, memberRole),
+                                defaultRoles,
                                 now);
 
                         return repo.save(guild).thenApply(v -> {
