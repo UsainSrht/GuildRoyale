@@ -151,8 +151,18 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
                 )""".formatted(uuid));
 
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS guild_contributions (
+                    guild_id     %s NOT NULL,
+                    player_id    %s NOT NULL,
+                    contribution BIGINT NOT NULL DEFAULT 0,
+                    PRIMARY KEY (guild_id, player_id),
+                    FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
+                )""".formatted(uuid, uuid));
+
             // MySQL rejects CREATE INDEX IF NOT EXISTS, so tolerate "already exists".
             tryExecute(stmt, "CREATE INDEX idx_guild_members_player ON guild_members (player_id)");
+            tryExecute(stmt, "CREATE INDEX idx_guild_contributions_player ON guild_contributions (player_id)");
         }
     }
 
@@ -298,6 +308,7 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     for (GuildRole role : guild.getRoles()) upsertRole(conn, guild.getId().toString(), role);
                     for (GuildMember member : guild.getMembers()) upsertMember(conn, guild.getId().toString(), member);
                     replaceStorage(conn, guild);
+                    replaceContributions(conn, guild);
                     conn.commit();
                 } catch (SQLException e) {
                     conn.rollback();
@@ -328,6 +339,19 @@ public abstract class AbstractSqlRepository implements GuildRepository {
 
     private Optional<Guild> loadGuild(Connection conn, String id) throws SQLException {
         Guild guild;
+        Map<UUID, Long> contributions = new HashMap<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT player_id, contribution FROM guild_contributions WHERE guild_id = ?")) {
+            ps.setString(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    UUID pid = UUID.fromString(rs.getString("player_id"));
+                    long contrib = rs.getLong("contribution");
+                    if (contrib > 0) contributions.put(pid, contrib);
+                }
+            }
+        }
+
         try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM guilds WHERE id = ?")) {
             ps.setString(1, id);
             try (ResultSet rs = ps.executeQuery()) {
@@ -345,7 +369,7 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                 boolean friendlyFire = rs.getBoolean("friendly_fire");
                 guild = new Guild(guildId, name, shortname, icon, level, xp,
                         new ArrayList<>(), new ArrayList<>(), createdAt,
-                        ownedBadges, activeBadge, new HashMap<>(), friendlyFire);
+                        ownedBadges, activeBadge, new HashMap<>(), friendlyFire, contributions);
             }
         }
 
@@ -512,6 +536,25 @@ public abstract class AbstractSqlRepository implements GuildRepository {
             ps.setString(4, member.getJoinedAt().toString());
             ps.setLong(5, member.getContribution());
             ps.executeUpdate();
+        }
+    }
+
+    private void replaceContributions(Connection conn, Guild g) throws SQLException {
+        String guildId = g.getId().toString();
+        try (PreparedStatement ps = conn.prepareStatement("DELETE FROM guild_contributions WHERE guild_id = ?")) {
+            ps.setString(1, guildId);
+            ps.executeUpdate();
+        }
+        try (PreparedStatement ps = conn.prepareStatement(
+                "INSERT INTO guild_contributions (guild_id, player_id, contribution) VALUES (?, ?, ?)")) {
+            for (Map.Entry<UUID, Long> entry : g.getContributions().entrySet()) {
+                if (entry.getKey() == null || entry.getValue() == null || entry.getValue() <= 0) continue;
+                ps.setString(1, guildId);
+                ps.setString(2, entry.getKey().toString());
+                ps.setLong(3, entry.getValue());
+                ps.addBatch();
+            }
+            ps.executeBatch();
         }
     }
 }

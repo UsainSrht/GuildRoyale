@@ -1,6 +1,7 @@
 package me.usainsrht.guildroyale.core.gui.impl;
 
 import me.usainsrht.guildroyale.api.domain.Guild;
+import me.usainsrht.guildroyale.api.domain.GuildLevel;
 import me.usainsrht.guildroyale.api.domain.GuildMember;
 import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.adapter.ItemStackAdapter;
@@ -41,6 +42,7 @@ public final class GuildMainGui extends AbstractGui {
     private final GuildMember viewer;
     private final GuiManager guiManager;
     private final int infoSlot;
+    private final int levelSlot;
     private final int membersSlot;
     private final int rolesSlot;
     private final int leaderboardSlot;
@@ -60,6 +62,7 @@ public final class GuildMainGui extends AbstractGui {
         GuiConfig gui = GuiItems.config();
         this.iconSlot = gui != null ? gui.slot("main.slots.icon", 13) : 13;
         this.infoSlot = gui != null ? gui.slot("main.slots.info", 20) : 20;
+        this.levelSlot = gui != null ? gui.slot("main.slots.level", gui.slot("main.slots.xp", 21)) : 21;
         this.membersSlot = gui != null ? gui.slot("main.slots.members", 22) : 22;
         this.rolesSlot = gui != null ? gui.slot("main.slots.roles", 24) : 24;
         this.leaderboardSlot = gui != null ? gui.slot("main.slots.leaderboard", 29) : 29;
@@ -93,6 +96,7 @@ public final class GuildMainGui extends AbstractGui {
         }
 
         setSlot(infoSlot, buildInfoItem());
+        setSlot(levelSlot, buildLevelItem());
         setSlot(membersSlot, GuiItems.get("main-members"));
         setSlot(rolesSlot, GuiItems.get("main-roles"));
         setSlot(leaderboardSlot, GuiItems.get("main-leaderboard"));
@@ -104,6 +108,66 @@ public final class GuildMainGui extends AbstractGui {
                 "main-badges", "main-badges-locked"));
         setSlot(permissionsSlot, GuiItems.get("main-permissions"));
         setSlot(settingsSlot, GuiItems.get("main-settings"));
+    }
+
+    private ItemStack buildLevelItem() {
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        int currentLevel = guild.getLevel();
+        long currentXp = guild.getXp();
+        int cap = plugin != null ? plugin.getConfigManager().getLevelCap() : 10;
+        boolean isMax = new GuildLevel(currentLevel).isMaxLevel(cap);
+        GuiConfig gui = GuiItems.config();
+
+        if (isMax) {
+            return GuiItems.get("main-level-max",
+                    Placeholder.unparsed("level", String.valueOf(currentLevel)),
+                    Placeholder.unparsed("xp", String.valueOf(currentXp)));
+        }
+
+        long requiredXp = plugin != null
+                ? plugin.getGuildService().xpRequiredForLevel(currentLevel + 1)
+                : 1000L;
+        long remainingXp = Math.max(0, requiredXp - currentXp);
+        long percent = requiredXp > 0
+                ? Math.min(100L, Math.max(0L, Math.round((double) currentXp / requiredXp * 100.0)))
+                : 0L;
+        String progressBar = GuildLevelGui.formatProgressBar(currentXp, requiredXp, 10);
+
+        ItemStack item = GuiItems.get("main-level",
+                Placeholder.unparsed("level", String.valueOf(currentLevel)),
+                Placeholder.unparsed("xp", String.valueOf(currentXp)),
+                Placeholder.unparsed("xp_needed", String.valueOf(requiredXp)),
+                Placeholder.unparsed("xp_remaining", String.valueOf(remainingXp)),
+                Placeholder.parsed("progress_bar", progressBar),
+                Placeholder.unparsed("percent", String.valueOf(percent)),
+                Placeholder.unparsed("next_level", String.valueOf(currentLevel + 1)));
+
+        List<String> advantages = plugin != null
+                ? plugin.getConfigManager().getNextLevelAdvantages(currentLevel)
+                : List.of();
+
+        if (!advantages.isEmpty()) {
+            ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                List<Component> lore = meta.lore() != null ? new ArrayList<>(meta.lore()) : new ArrayList<>();
+                int insertIndex = Math.max(0, lore.size() - 2);
+                List<Component> advComponents = new ArrayList<>();
+                String header = gui != null
+                        ? gui.string("main.next-perks-header", " <yellow><bold>Next Level Perks (Lv.<next_level>):</bold></yellow> ")
+                        : " <yellow><bold>Next Level Perks (Lv.<next_level>):</bold></yellow> ";
+                advComponents.add(Text.parse(header, Placeholder.unparsed("next_level", String.valueOf(currentLevel + 1)))
+                        .decoration(TextDecoration.ITALIC, false));
+                for (String adv : advantages) {
+                    advComponents.add(Text.parse(adv).decoration(TextDecoration.ITALIC, false));
+                }
+                advComponents.add(Component.empty());
+                lore.addAll(insertIndex, advComponents);
+                meta.lore(lore);
+                item.setItemMeta(meta);
+            }
+        }
+
+        return item;
     }
 
     private ItemStack buildInfoItem() {
@@ -171,6 +235,10 @@ public final class GuildMainGui extends AbstractGui {
         if (slot == infoSlot || slot == iconSlot) {
             // Info is lore-only; icon is display-only.
             return true;
+        } else if (slot == levelSlot) {
+            new GuildLevelGui(guild, viewer, guiManager, 0)
+                    .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))
+                    .open(player);
         } else if (slot == membersSlot) {
             new GuildMembersGui(guild, viewer, guiManager, 0)
                     .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))

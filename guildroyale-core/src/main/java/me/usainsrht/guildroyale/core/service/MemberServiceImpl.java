@@ -85,8 +85,13 @@ public final class MemberServiceImpl implements MemberService {
             return repo.findById(guildId).thenCompose(opt -> {
                 if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
                 Guild guild = opt.get();
+                int maxMembers = config.getMaxMembersForLevel(guild.getLevel());
+                if (guild.getMemberCount() >= maxMembers) {
+                    return done(ActionResult.failure("guild-max-members-reached"));
+                }
                 GuildRole defaultRole = guild.getDefaultRole();
-                GuildMember newMember = new GuildMember(playerId, defaultRole, Instant.now(), 0L);
+                long priorContrib = guild.getContribution(playerId);
+                GuildMember newMember = new GuildMember(playerId, defaultRole, Instant.now(), priorContrib);
                 guild.addMember(newMember);
                 revokeInvite(guildId, playerId);
 

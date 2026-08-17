@@ -176,6 +176,82 @@ public final class ConfigManager {
         return getStorageUnlockedSlots(level);
     }
 
+    public int getMaxMembersForLevel(int level) {
+        int base = cfg.getInt("features.members.base", 10);
+        int perLevel = cfg.getInt("features.members.per-level", 2);
+        int max = cfg.getInt("features.members.max", 50);
+        int computed = base + (Math.max(1, level) - 1) * perLevel;
+        return max > 0 ? Math.min(max, computed) : computed;
+    }
+
+    public int getMaxRolesForLevel(int level) {
+        int base = cfg.getInt("features.roles.base", 4);
+        int perLevel = cfg.getInt("features.roles.per-level", 1);
+        int max = cfg.getInt("features.roles.max", 15);
+        int computed = base + (Math.max(1, level) - 1) * perLevel;
+        return max > 0 ? Math.min(max, computed) : computed;
+    }
+
+    public List<String> getCustomPerksForLevel(int level) {
+        List<String> list = cfg.getStringList("xp.perks." + level);
+        if (list.isEmpty()) {
+            list = cfg.getStringList("features.perks." + level);
+        }
+        return list;
+    }
+
+    public List<String> getNextLevelAdvantages(int currentLevel) {
+        int nextLevel = currentLevel + 1;
+        int cap = getLevelCap();
+        if (cap > 0 && currentLevel >= cap) {
+            return List.of();
+        }
+        List<String> advantages = new ArrayList<>();
+
+        int currentMembers = getMaxMembersForLevel(currentLevel);
+        int nextMembers = getMaxMembersForLevel(nextLevel);
+        if (nextMembers > currentMembers) {
+            advantages.add(" <green>+ <white>" + (nextMembers - currentMembers) + " Max Members <dark_gray>(" + nextMembers + " max)</dark_gray>");
+        }
+
+        int currentRoles = getMaxRolesForLevel(currentLevel);
+        int nextRoles = getMaxRolesForLevel(nextLevel);
+        if (nextRoles > currentRoles) {
+            advantages.add(" <green>+ <white>" + (nextRoles - currentRoles) + " Max Custom Roles <dark_gray>(" + nextRoles + " max)</dark_gray>");
+        }
+
+        int currentSlots = getStorageUnlockedSlots(currentLevel);
+        int nextSlots = getStorageUnlockedSlots(nextLevel);
+        if (nextLevel == getStorageUnlockLevel() && currentSlots == 0 && nextSlots > 0) {
+            advantages.add(" <green>+ <white>Guild Storage Unlocked <dark_gray>(" + nextSlots + " slots)</dark_gray>");
+        } else if (nextSlots > currentSlots) {
+            advantages.add(" <green>+ <white>" + (nextSlots - currentSlots) + " Storage Slots <dark_gray>(" + nextSlots + " total)</dark_gray>");
+        }
+
+        if (nextLevel == getFeatureUnlockLevel(GuildFeature.ICON)) {
+            advantages.add(" <green>+ <white>Custom Guild Icon Unlocked");
+        }
+        if (nextLevel == getFeatureUnlockLevel(GuildFeature.SHORTNAME)) {
+            advantages.add(" <green>+ <white>Guild Shortname Tag Unlocked");
+        }
+        if (nextLevel == getFeatureUnlockLevel(GuildFeature.BANK)) {
+            advantages.add(" <green>+ <white>Guild Bank Unlocked");
+        }
+        if (nextLevel == getFeatureUnlockLevel(GuildFeature.BADGE)) {
+            advantages.add(" <green>+ <white>Guild Badges Unlocked");
+        }
+
+        for (String perk : getCustomPerksForLevel(nextLevel)) {
+            advantages.add(" <green>+ <white>" + perk);
+        }
+
+        if (advantages.isEmpty()) {
+            advantages.add(" <gray>+ Guild progression level " + nextLevel);
+        }
+
+        return advantages;
+    }
+
     // ── Badges ───────────────────────────────────────────────────
 
     public Map<String, BadgeDefinition> getBadges() {

@@ -22,12 +22,13 @@ public final class Guild {
     private String activeBadgeId;
     private final Map<Integer, SerializableItemStack> storage;
     private boolean friendlyFire;
+    private final Map<UUID, Long> contributions;
 
     public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
                  int level, long xp, List<GuildMember> members, List<GuildRole> roles,
                  Instant createdAt) {
         this(id, name, shortname, icon, level, xp, members, roles, createdAt,
-                Set.of(), null, Map.of(), false);
+                Set.of(), null, Map.of(), false, Map.of());
     }
 
     public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
@@ -35,13 +36,22 @@ public final class Guild {
                  Instant createdAt, Set<String> ownedBadges, String activeBadgeId,
                  Map<Integer, SerializableItemStack> storage) {
         this(id, name, shortname, icon, level, xp, members, roles, createdAt,
-                ownedBadges, activeBadgeId, storage, false);
+                ownedBadges, activeBadgeId, storage, false, Map.of());
     }
 
     public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
                  int level, long xp, List<GuildMember> members, List<GuildRole> roles,
                  Instant createdAt, Set<String> ownedBadges, String activeBadgeId,
                  Map<Integer, SerializableItemStack> storage, boolean friendlyFire) {
+        this(id, name, shortname, icon, level, xp, members, roles, createdAt,
+                ownedBadges, activeBadgeId, storage, friendlyFire, Map.of());
+    }
+
+    public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
+                 int level, long xp, List<GuildMember> members, List<GuildRole> roles,
+                 Instant createdAt, Set<String> ownedBadges, String activeBadgeId,
+                 Map<Integer, SerializableItemStack> storage, boolean friendlyFire,
+                 Map<UUID, Long> contributions) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = Objects.requireNonNull(name, "name");
         this.shortname = Objects.requireNonNull(shortname, "shortname");
@@ -65,6 +75,21 @@ public final class Guild {
             });
         }
         this.friendlyFire = friendlyFire;
+        this.contributions = new HashMap<>();
+        if (contributions != null) {
+            contributions.forEach((pid, val) -> {
+                if (pid != null && val != null && val > 0) {
+                    this.contributions.put(pid, val);
+                }
+            });
+        }
+        for (GuildMember m : this.members) {
+            if (m.getContribution() > 0 && !this.contributions.containsKey(m.getPlayerId())) {
+                this.contributions.put(m.getPlayerId(), m.getContribution());
+            } else if (this.contributions.containsKey(m.getPlayerId())) {
+                m.setContribution(this.contributions.get(m.getPlayerId()));
+            }
+        }
     }
 
     // ── Identity ────────────────────────────────────────────────────────────
@@ -166,6 +191,34 @@ public final class Guild {
     }
 
     public int getMemberCount() { return members.size(); }
+
+    // ── Contributions ────────────────────────────────────────────────────────
+
+    public Map<UUID, Long> getContributions() {
+        return Collections.unmodifiableMap(contributions);
+    }
+
+    public long getContribution(UUID playerId) {
+        if (playerId == null) return 0L;
+        return contributions.getOrDefault(playerId, 0L);
+    }
+
+    public void addContribution(UUID playerId, long amount) {
+        if (playerId == null || amount <= 0) return;
+        long newTotal = contributions.merge(playerId, amount, Long::sum);
+        getMember(playerId).ifPresent(m -> m.setContribution(newTotal));
+    }
+
+    public void setContribution(UUID playerId, long amount) {
+        if (playerId == null) return;
+        long val = Math.max(0, amount);
+        if (val == 0) {
+            contributions.remove(playerId);
+        } else {
+            contributions.put(playerId, val);
+        }
+        getMember(playerId).ifPresent(m -> m.setContribution(val));
+    }
 
     // ── Roles ────────────────────────────────────────────────────────────────
 

@@ -203,6 +203,14 @@ public final class JsonGuildRepository implements GuildRepository {
         g.getStorage().forEach((slot, item) -> storage.add(String.valueOf(slot), serializeIcon(item)));
         obj.add("storage", storage);
 
+        JsonObject contributions = new JsonObject();
+        g.getContributions().forEach((pid, val) -> {
+            if (pid != null && val != null && val > 0) {
+                contributions.addProperty(pid.toString(), val);
+            }
+        });
+        obj.add("contributions", contributions);
+
         return obj;
     }
 
@@ -269,8 +277,20 @@ public final class JsonGuildRepository implements GuildRepository {
 
         boolean friendlyFire = obj.has("friendlyFire") && obj.get("friendlyFire").getAsBoolean();
 
+        Map<UUID, Long> contributions = new HashMap<>();
+        if (obj.has("contributions") && obj.get("contributions").isJsonObject()) {
+            JsonObject contribObj = obj.getAsJsonObject("contributions");
+            for (Map.Entry<String, JsonElement> entry : contribObj.entrySet()) {
+                try {
+                    UUID pid = UUID.fromString(entry.getKey());
+                    long val = entry.getValue().getAsLong();
+                    if (val > 0) contributions.put(pid, val);
+                } catch (Exception ignored) {}
+            }
+        }
+
         return new Guild(id, name, shortname, icon, level, xp, members, roles, createdAt,
-                ownedBadges, activeBadgeId, storage, friendlyFire);
+                ownedBadges, activeBadgeId, storage, friendlyFire, contributions);
     }
 
     private JsonObject serializeIcon(SerializableItemStack icon) {

@@ -95,6 +95,7 @@ member-not-found: "<red>That player is not a member of your guild."
 cannot-kick-self: "<red>You cannot kick yourself. Use leave instead."
 cannot-kick-leader: "<red>You cannot kick the guild leader."
 target-outranks-you: "<red>You cannot perform this action on someone who outranks you."
+guild-max-members-reached: "<red>This guild has reached its maximum member capacity."
 
 # ── Invitations ───────────────────────────────────────────────────
 invite-sent:

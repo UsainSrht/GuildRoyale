@@ -4,6 +4,7 @@ package me.usainsrht.guildroyale.core.feature;
  * Features that can be gated behind a minimum guild level.
  */
 public enum GuildFeature {
+    ICON("icon"),
     SHORTNAME("shortname"),
     BADGE("badge"),
     STORAGE("storage"),

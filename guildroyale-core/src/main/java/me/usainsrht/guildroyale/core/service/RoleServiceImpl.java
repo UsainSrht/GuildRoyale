@@ -9,6 +9,7 @@ import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.api.service.RoleService;
 import me.usainsrht.guildroyale.api.storage.GuildRepository;
+import me.usainsrht.guildroyale.core.config.ConfigManager;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -21,12 +22,17 @@ public final class RoleServiceImpl implements RoleService {
 
     private static final Pattern ROLE_NAME_PATTERN = Pattern.compile("^.{2,20}$");
     private static final int MAX_ROLES = 10;
-
     private final GuildRepository repo;
+    private final ConfigManager config;
     private final PermissionEvaluatorImpl evaluator = new PermissionEvaluatorImpl();
 
     public RoleServiceImpl(GuildRepository repo) {
+        this(repo, null);
+    }
+
+    public RoleServiceImpl(GuildRepository repo, ConfigManager config) {
         this.repo = repo;
+        this.config = config;
     }
 
     @Override
@@ -35,7 +41,8 @@ public final class RoleServiceImpl implements RoleService {
             return done(ActionResult.failure("role-name-invalid"));
         }
         return requireGuildAndPermission(guildId, requesterId, GuildPermissionKey.ROLE_MANAGEMENT, guild -> {
-            if (guild.getRoles().size() >= MAX_ROLES) return ActionResult.failure("role-max-reached");
+            int maxRoles = config != null ? config.getMaxRolesForLevel(guild.getLevel()) : MAX_ROLES;
+            if (guild.getRoles().size() >= maxRoles) return ActionResult.failure("role-max-reached");
             int nextIndex = guild.getRoles().stream()
                     .mapToInt(GuildRole::getIndex).max().orElse(0) + 1;
             GuildRole newRole = new GuildRole(roleName, nextIndex, EnumSet.noneOf(GuildPermissionKey.class),

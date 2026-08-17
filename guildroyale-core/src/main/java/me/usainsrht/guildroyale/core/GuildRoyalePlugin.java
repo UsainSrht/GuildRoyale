@@ -87,7 +87,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
 
         guildService = new GuildServiceImpl(repository, configManager, economy, scheduler, events);
         memberService = new MemberServiceImpl(repository, configManager, events);
-        roleService = new RoleServiceImpl(repository);
+        roleService = new RoleServiceImpl(repository, configManager);
         leaderboardService = new LeaderboardServiceImpl(repository, configManager, scheduler);
         leaderboardService.startRefreshTask();
         tagService = new TagServiceImpl(messagesManager);

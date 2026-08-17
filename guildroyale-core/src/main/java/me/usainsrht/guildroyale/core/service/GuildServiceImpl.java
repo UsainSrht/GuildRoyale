@@ -259,10 +259,18 @@ public final class GuildServiceImpl implements GuildService {
 
     @Override
     public CompletableFuture<Integer> addXp(UUID guildId, long amount) {
+        return addXp(guildId, null, amount);
+    }
+
+    @Override
+    public CompletableFuture<Integer> addXp(UUID guildId, UUID contributorId, long amount) {
         return repo.findById(guildId).thenCompose(opt -> {
             if (opt.isEmpty()) return CompletableFuture.completedFuture(0);
             Guild guild = opt.get();
             guild.addXp(amount);
+            if (contributorId != null && amount > 0) {
+                guild.addContribution(contributorId, amount);
+            }
 
             events.fire(new GuildXpGainedEvent(guild, amount));
 
@@ -302,8 +310,15 @@ public final class GuildServiceImpl implements GuildService {
 
     @Override
     public CompletableFuture<ActionResult> setIcon(UUID guildId, UUID requesterId, SerializableItemStack icon) {
-        return mutateGuild(guildId, requesterId, GuildPermissionKey.ICON_CHANGE, guild -> {
-            guild.setIcon(icon);
+        return repo.findById(guildId).thenCompose(opt -> {
+            if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
+            Guild guild = opt.get();
+            if (!featureGate.isUnlocked(guild, GuildFeature.ICON)) {
+                return done(ActionResult.failure("feature-locked"));
+            }
+            return mutateGuild(guildId, requesterId, GuildPermissionKey.ICON_CHANGE, g -> {
+                g.setIcon(icon);
+            });
         });
     }
 
@@ -563,12 +578,7 @@ public final class GuildServiceImpl implements GuildService {
 
     @Override
     public CompletableFuture<Void> adminAddXp(UUID guildId, long amount) {
-        return repo.findById(guildId).thenCompose(opt -> {
-            if (opt.isEmpty()) return CompletableFuture.completedFuture(null);
-            Guild guild = opt.get();
-            guild.addXp(amount);
-            return repo.save(guild);
-        });
+        return addXp(guildId, amount).thenApply(v -> null);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

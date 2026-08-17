@@ -45,9 +45,26 @@ xp:
   multiplier: 1.5
   # Maximum guild level. Set to 0 (or negative) for unlimited.
   level-cap: 10
+  # Optional custom perks/rewards displayed per level
+  # perks:
+  #   2:
+  #     - "<gray>Access to <yellow>Guild Bank"
+  #     - "<gray>Custom guild <yellow>Shortname"
 
-# ── Feature unlock levels ────────────────────────────────────────
+# ── Feature unlock levels & level perks ───────────────────────────
 features:
+  # Maximum members per guild level: base + (level - 1) * per-level (up to max)
+  members:
+    base: 10
+    per-level: 2
+    max: 50
+  # Maximum custom roles per guild level: base + (level - 1) * per-level (up to max)
+  roles:
+    base: 4
+    per-level: 1
+    max: 15
+  icon:
+    unlock-level: 1
   shortname:
     unlock-level: 2
   badge:

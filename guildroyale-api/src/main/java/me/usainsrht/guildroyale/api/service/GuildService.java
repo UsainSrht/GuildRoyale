@@ -40,6 +40,13 @@ public interface GuildService {
      */
     CompletableFuture<Integer> addXp(UUID guildId, long amount);
 
+    /**
+     * Adds XP to the guild with a specific contributor and handles level-up.
+     */
+    default CompletableFuture<Integer> addXp(UUID guildId, UUID contributorId, long amount) {
+        return addXp(guildId, amount);
+    }
+
     /** Sets the guild icon. Requires {@link GuildPermissionKey#ICON_CHANGE}. */
     CompletableFuture<ActionResult> setIcon(UUID guildId, UUID requesterId, SerializableItemStack icon);
 

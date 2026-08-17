@@ -56,6 +56,7 @@ main:
   slots:
     icon: 13
     info: 20
+    level: 21
     members: 22
     roles: 24
     leaderboard: 29
@@ -65,6 +66,8 @@ main:
     permissions: 38
     settings: 42
   badge-line: " <gray>Badge: <badge> "
+  next-perks-header: " <yellow><bold>Next Level Perks (Lv.<next_level>):</bold></yellow> "
+  max-level-reached: " <green>Maximum level reached! "
 
 members:
   size: 54
@@ -233,6 +236,18 @@ badges:
       - " <dark_gray>Grant-Only Badge "
       - ""
 
+level:
+  size: 54
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Level & Contributors</bold></gradient></shadow>"
+  title-paged: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Level & Contributors</bold> page (<page>/<max_page>)</gradient></shadow>"
+  slots:
+    previous: 45
+    back: 49
+    next: 53
+    top-action: 4
+  status-active: "<green>Active Member</green>"
+  status-former: "<red>Former Member</red>"
+
 
 items:
   # ── Hub (not in a guild) ───────────────────────────────────────
@@ -321,6 +336,32 @@ items:
       - " <gray>Members: <members> "
       - " <gray>Leader: <leader> "
       - " <gray>Founded: <founded> "
+      - ""
+
+  main-level:
+    material: experience_bottle
+    name: "<gradient:#55c57a:#a8e6c1><bold>Guild Level & XP</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Current Level: <gold><level></gold> "
+      - " <gray>Current XP: <yellow><xp></yellow> / <yellow><xp_needed></yellow> "
+      - " <gray>Progress: <progress_bar> <gray>(<yellow><percent>%</yellow>) "
+      - ""
+      - " <yellow>Click to view XP contributors "
+      - ""
+
+  main-level-max:
+    material: experience_bottle
+    name: "<gradient:#55c57a:#a8e6c1><bold>Guild Level & XP</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Current Level: <gold><level></gold> <gold>(MAX)</gold> "
+      - " <gray>Total XP: <yellow><xp></yellow> "
+      - " <gray>Progress: <green>■■■■■■■■■■ (100%)</green> "
+      - ""
+      - " <green>Maximum level reached! "
+      - ""
+      - " <yellow>Click to view XP contributors "
       - ""
 
   main-members:
@@ -659,4 +700,37 @@ items:
       - " <gray>Level: <white><level> "
       - " <gray>XP: <white><xp> "
       - " <gray>Members: <white><members> "
+      - ""
+
+  # ── Level & Contributors ───────────────────────────────────────
+  level-entry:
+    material: player_head
+    name: "<gradient:#f4d03f:#f9e79f><bold><player></bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Role: <white><role></white> "
+      - " <gray>Contribution: <gold><contribution></gold> XP <dark_gray>(<percent>%)</dark_gray> "
+      - " <gray>Status: <status> "
+      - ""
+
+  level-summary:
+    material: experience_bottle
+    name: "<gradient:#55c57a:#a8e6c1><bold>Guild Level <level></bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Current XP: <yellow><xp></yellow> / <yellow><xp_needed></yellow> "
+      - " <gray>Progress: <progress_bar> <gray>(<yellow><percent>%</yellow>) "
+      - " <gray>Total Contributors: <gold><contributors></gold> "
+      - ""
+
+  level-summary-max:
+    material: experience_bottle
+    name: "<gradient:#55c57a:#a8e6c1><bold>Guild Level <level> (MAX)</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Total XP: <yellow><xp></yellow> "
+      - " <gray>Progress: <green>■■■■■■■■■■ (100%)</green> "
+      - " <gray>Total Contributors: <gold><contributors></gold> "
+      - ""
+      - " <green>Maximum level reached! "
       - ""
