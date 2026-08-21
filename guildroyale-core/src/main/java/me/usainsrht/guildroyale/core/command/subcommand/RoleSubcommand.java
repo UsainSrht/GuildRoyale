@@ -52,6 +52,18 @@ public final class RoleSubcommand {
                                 .executes(ctx -> executeTogglePerm(ctx,
                                         IntegerArgumentType.getInteger(ctx, "index"),
                                         StringArgumentType.getString(ctx, "permission"))))));
+        CommandNodes.attachChild(root, spec.child("setcolor", "setcolor"), child -> child
+                .then(Commands.argument("index", IntegerArgumentType.integer(0))
+                        .then(Commands.argument("color", StringArgumentType.word())
+                                .executes(ctx -> executeSetColor(ctx,
+                                        IntegerArgumentType.getInteger(ctx, "index"),
+                                        StringArgumentType.getString(ctx, "color"))))));
+        CommandNodes.attachChild(root, spec.child("setglowcolor", "setglowcolor"), child -> child
+                .then(Commands.argument("index", IntegerArgumentType.integer(0))
+                        .then(Commands.argument("color", StringArgumentType.word())
+                                .executes(ctx -> executeSetGlowColor(ctx,
+                                        IntegerArgumentType.getInteger(ctx, "index"),
+                                        StringArgumentType.getString(ctx, "color"))))));
         return root;
     }
 
@@ -156,6 +168,70 @@ public final class RoleSubcommand {
                                             plugin.getMessages().send(player, "permission-toggled",
                                                     role != null ? plugin.getTagService().roleResolver(role, opt.get(), player)
                                                             : net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.unparsed("role", String.valueOf(index)));
+                                    case ActionResult.Failure f ->
+                                            plugin.getMessages().send(player, f.reason());
+                                }
+                            }));
+                })
+        );
+        return 1;
+    }
+
+    private static int executeSetColor(CommandContext<CommandSourceStack> ctx, int index, String colorStr) {
+        if (!(ctx.getSource().getSender() instanceof Player player)) return 0;
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        if (plugin == null) return 0;
+
+        var colorOpt = me.usainsrht.guildroyale.api.domain.RoleColor.fromString(colorStr);
+        if (colorOpt.isEmpty()) {
+            plugin.getMessages().send(player, "role-color-invalid");
+            return 0;
+        }
+
+        var color = colorOpt.get();
+        plugin.getScheduler().runAsync(() ->
+                plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenCompose(opt -> {
+                    if (opt.isEmpty()) return java.util.concurrent.CompletableFuture.completedFuture(null);
+                    return plugin.getRoleService().setRoleColor(opt.get().getId(), player.getUniqueId(), index, color)
+                            .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
+                                switch (result) {
+                                    case ActionResult.Success s -> {
+                                        String colorDisplayName = plugin.getConfigManager().getRoleColorName(color);
+                                        plugin.getMessages().send(player, "role-color-updated",
+                                                net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.parsed("color", colorDisplayName));
+                                    }
+                                    case ActionResult.Failure f ->
+                                            plugin.getMessages().send(player, f.reason());
+                                }
+                            }));
+                })
+        );
+        return 1;
+    }
+
+    private static int executeSetGlowColor(CommandContext<CommandSourceStack> ctx, int index, String colorStr) {
+        if (!(ctx.getSource().getSender() instanceof Player player)) return 0;
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        if (plugin == null) return 0;
+
+        var colorOpt = me.usainsrht.guildroyale.api.domain.RoleColor.fromString(colorStr);
+        if (colorOpt.isEmpty()) {
+            plugin.getMessages().send(player, "role-glow-color-invalid");
+            return 0;
+        }
+
+        var color = colorOpt.get();
+        plugin.getScheduler().runAsync(() ->
+                plugin.getGuildService().getGuildByMember(player.getUniqueId()).thenCompose(opt -> {
+                    if (opt.isEmpty()) return java.util.concurrent.CompletableFuture.completedFuture(null);
+                    return plugin.getRoleService().setRoleGlowColor(opt.get().getId(), player.getUniqueId(), index, color)
+                            .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
+                                switch (result) {
+                                    case ActionResult.Success s -> {
+                                        String colorDisplayName = plugin.getConfigManager().getRoleColorName(color);
+                                        plugin.getMessages().send(player, "role-glow-color-updated",
+                                                net.kyori.adventure.text.minimessage.tag.resolver.Placeholder.parsed("color", colorDisplayName));
+                                    }
                                     case ActionResult.Failure f ->
                                             plugin.getMessages().send(player, f.reason());
                                 }

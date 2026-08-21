@@ -53,6 +53,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
     private GuiManager guiManager;
     private DialogManager dialogManager;
     private me.usainsrht.guildroyale.core.gui.GuildStorageManager guildStorageManager;
+    private me.usainsrht.guildroyale.core.glow.GlowManager glowManager;
 
     @Override
     public void onEnable() {
@@ -105,6 +106,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
                 org.bukkit.plugin.ServicePriority.Normal
         );
 
+        glowManager = new me.usainsrht.guildroyale.core.glow.GlowManager(this);
         guiManager = new GuiManager();
         dialogManager = new DialogManager();
         guildStorageManager = new me.usainsrht.guildroyale.core.gui.GuildStorageManager(this);
@@ -115,6 +117,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
         pm.registerEvents(new PlayerQuitListener(guiManager), this);
         pm.registerEvents(new me.usainsrht.guildroyale.core.listener.GuildDamageListener(guildService), this);
         pm.registerEvents(new me.usainsrht.guildroyale.core.listener.MissionListener(this, missionService, guildService), this);
+        pm.registerEvents(new me.usainsrht.guildroyale.core.listener.GuildGlowListener(glowManager), this);
 
         if (pm.getPlugin("PlaceholderAPI") != null) {
             new GuildRoyalePlaceholderExpansion(this, guildService, leaderboardService).register();
@@ -128,6 +131,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         MiniPlaceholdersHook.unregister();
+        if (glowManager != null) glowManager.shutdown();
         if (missionService != null) missionService.shutdown();
         if (missionRepository != null) missionRepository.shutdown();
         if (guildStorageManager != null) guildStorageManager.clear();
@@ -156,6 +160,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
 
     public me.usainsrht.guildroyale.core.service.TagService getTagService() { return tagService; }
 
+    public me.usainsrht.guildroyale.core.glow.GlowManager getGlowManager() { return glowManager; }
     public GuiManager getGuiManager() { return guiManager; }
     public DialogManager getDialogManager() { return dialogManager; }
     public me.usainsrht.guildroyale.core.gui.GuildStorageManager getGuildStorageManager() { return guildStorageManager; }

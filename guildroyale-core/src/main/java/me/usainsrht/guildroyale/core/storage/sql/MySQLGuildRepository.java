@@ -61,6 +61,6 @@ public final class MySQLGuildRepository extends AbstractSqlRepository {
                 icon_mat=VALUES(icon_mat), icon_data=VALUES(icon_data),
                 level=VALUES(level), xp=VALUES(xp),
                 owned_badges=VALUES(owned_badges), active_badge=VALUES(active_badge),
-                friendly_fire=VALUES(friendly_fire)""";
+                friendly_fire=VALUES(friendly_fire), glow=VALUES(glow)""";
     }
 }

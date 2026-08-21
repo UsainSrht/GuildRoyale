@@ -25,9 +25,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Picks one of the 16 Minecraft dye colors for a role.
+ * Picks one of the 16 Minecraft dye colors for a role (display color or glow color).
  */
 public final class RoleColorGui extends AbstractGui {
+
+    public enum Mode {
+        ROLE_COLOR,
+        GLOW_COLOR
+    }
 
     private static final int[] DYE_SLOTS = {
             10, 11, 12, 13, 14, 15, 16,
@@ -40,29 +45,44 @@ public final class RoleColorGui extends AbstractGui {
     private final GuildMember viewer;
     private final GuiManager guiManager;
     private final AbstractGui parentEditor;
+    private final Mode mode;
     private final int backSlot;
     private final Map<Integer, RoleColor> slotColors = new HashMap<>();
 
     public RoleColorGui(Guild guild, GuildRole role, GuildMember viewer,
                         GuiManager guiManager, AbstractGui parentEditor) {
-        super(size(), title(role));
+        this(guild, role, viewer, guiManager, parentEditor, Mode.ROLE_COLOR);
+    }
+
+    public RoleColorGui(Guild guild, GuildRole role, GuildMember viewer,
+                        GuiManager guiManager, AbstractGui parentEditor, Mode mode) {
+        super(size(mode), title(role, mode));
         this.guild = guild;
         this.role = role;
         this.viewer = viewer;
         this.guiManager = guiManager;
         this.parentEditor = parentEditor;
+        this.mode = mode != null ? mode : Mode.ROLE_COLOR;
 
         GuiConfig gui = GuiItems.config();
-        this.backSlot = gui != null ? gui.slot("role-color.slots.back", 49) : 49;
+        String prefix = mode == Mode.GLOW_COLOR ? "role-glow-color" : "role-color";
+        this.backSlot = gui != null ? gui.slot(prefix + ".slots.back", 49) : 49;
     }
 
-    private static int size() {
+    private static int size(Mode mode) {
         GuiConfig gui = GuiItems.config();
-        return gui != null ? gui.size("role-color.size", 54) : 54;
+        String prefix = mode == Mode.GLOW_COLOR ? "role-glow-color" : "role-color";
+        return gui != null ? gui.size(prefix + ".size", 54) : 54;
     }
 
-    private static Component title(GuildRole role) {
+    private static Component title(GuildRole role, Mode mode) {
         GuiConfig gui = GuiItems.config();
+        if (mode == Mode.GLOW_COLOR) {
+            if (gui == null) {
+                return Component.text("Role Glow Color");
+            }
+            return gui.title("role-glow-color.title", Placeholder.unparsed("role", role.getName()));
+        }
         if (gui == null) {
             return Component.text("Role Color");
         }
@@ -76,6 +96,9 @@ public final class RoleColorGui extends AbstractGui {
         GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
         ConfigManager configManager = plugin != null ? plugin.getConfigManager() : null;
 
+        RoleColor currentColor = mode == Mode.GLOW_COLOR ? role.getGlowColor() : role.getColor();
+        String prefix = mode == Mode.GLOW_COLOR ? "role-glow-color" : "role-color";
+
         RoleColor[] colors = RoleColor.values();
         for (int i = 0; i < colors.length && i < DYE_SLOTS.length; i++) {
             RoleColor color = colors[i];
@@ -87,14 +110,14 @@ public final class RoleColorGui extends AbstractGui {
             ItemStack item = new ItemStack(dye);
             ItemMeta meta = item.getItemMeta();
             String colorDisplayName = configManager != null ? configManager.getRoleColorName(color) : (color.miniMessage() + color.name());
-            String nameTpl = color == role.getColor()
+            String nameTpl = color == currentColor
                     ? "<green><bold><color> <dark_gray>« selected"
                     : color.miniMessage() + "<bold><color>";
             GuiConfig gui = GuiItems.config();
             if (gui != null) {
-                nameTpl = color == role.getColor()
-                        ? gui.string("role-color.selected", "<green><bold><color> <dark_gray>« selected")
-                        : gui.string("role-color.unselected", "<color_tag><bold><color>");
+                nameTpl = color == currentColor
+                        ? gui.string(prefix + ".selected", "<green><bold><color> <dark_gray>« selected")
+                        : gui.string(prefix + ".unselected", "<color_tag><bold><color>");
             }
             String resolved = nameTpl
                     .replace("<color_tag>", color.miniMessage())
@@ -122,29 +145,33 @@ public final class RoleColorGui extends AbstractGui {
         GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
         if (plugin == null) return true;
 
-        plugin.getScheduler().runAsync(() ->
-                plugin.getRoleService().setRoleColor(guild.getId(), player.getUniqueId(), role.getIndex(), color)
-                        .thenCompose(result -> plugin.getGuildService().getGuild(guild.getId())
-                                .thenAccept(opt -> plugin.getScheduler().runForEntity(player, () -> {
-                                    switch (result) {
-                                        case ActionResult.Success s -> {
-                                            String colorDisplayName = plugin.getConfigManager().getRoleColorName(color);
-                                            plugin.getMessages().send(player, "role-color-updated",
-                                                    Placeholder.parsed("color", colorDisplayName));
-                                            if (opt.isPresent()) {
-                                                Guild fresh = opt.get();
-                                                GuildRole updated = fresh.getRole(role.getIndex()).orElse(role);
-                                                GuildMember freshViewer = fresh.getMember(viewer.getPlayerId()).orElse(viewer);
-                                                new RoleEditorGui(fresh, updated, freshViewer, guiManager)
-                                                        .returnTo(parentEditor)
-                                                        .open(player);
-                                            }
-                                        }
-                                        case ActionResult.Failure f ->
-                                                plugin.getMessages().send(player, f.reason());
-                                    }
-                                })))
-        );
+        plugin.getScheduler().runAsync(() -> {
+            var future = mode == Mode.GLOW_COLOR
+                    ? plugin.getRoleService().setRoleGlowColor(guild.getId(), player.getUniqueId(), role.getIndex(), color)
+                    : plugin.getRoleService().setRoleColor(guild.getId(), player.getUniqueId(), role.getIndex(), color);
+            String messageKey = mode == Mode.GLOW_COLOR ? "role-glow-color-updated" : "role-color-updated";
+
+            future.thenCompose(result -> plugin.getGuildService().getGuild(guild.getId())
+                    .thenAccept(opt -> plugin.getScheduler().runForEntity(player, () -> {
+                        switch (result) {
+                            case ActionResult.Success s -> {
+                                String colorDisplayName = plugin.getConfigManager().getRoleColorName(color);
+                                plugin.getMessages().send(player, messageKey,
+                                        Placeholder.parsed("color", colorDisplayName));
+                                if (opt.isPresent()) {
+                                    Guild fresh = opt.get();
+                                    GuildRole updated = fresh.getRole(role.getIndex()).orElse(role);
+                                    GuildMember freshViewer = fresh.getMember(viewer.getPlayerId()).orElse(viewer);
+                                    new RoleEditorGui(fresh, updated, freshViewer, guiManager)
+                                            .returnTo(parentEditor)
+                                            .open(player);
+                                }
+                            }
+                            case ActionResult.Failure f ->
+                                    plugin.getMessages().send(player, f.reason());
+                        }
+                    })));
+        });
         return true;
     }
 }

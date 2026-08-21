@@ -83,6 +83,7 @@ public final class RoleManagementGui extends StandardListGui<GuildRole> {
         GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
         ConfigManager configManager = plugin != null ? plugin.getConfigManager() : null;
         String colorName = configManager != null ? configManager.getRoleColorName(role.getColor()) : role.getColor().name();
+        String glowColorName = configManager != null ? configManager.getRoleColorName(role.getGlowColor()) : role.getGlowColor().name();
 
         TagResolver roleResolver = plugin != null
                 ? plugin.getTagService().roleResolver(role, guild, null)
@@ -92,7 +93,8 @@ public final class RoleManagementGui extends StandardListGui<GuildRole> {
                 roleResolver,
                 Placeholder.unparsed("index", String.valueOf(role.getIndex())),
                 Placeholder.unparsed("members", String.valueOf(members)),
-                Placeholder.parsed("color", colorName));
+                Placeholder.parsed("color", colorName),
+                Placeholder.parsed("glow_color", glowColorName));
         if (icon.getType().isAir()) {
             Material dye = Material.matchMaterial(role.getColor().dyeMaterial());
             if (dye != null) {

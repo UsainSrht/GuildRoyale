@@ -62,6 +62,12 @@ public interface GuildService {
     /** Toggles friendly fire setting. Requires {@link GuildPermissionKey#GUILD_SETTINGS}. */
     CompletableFuture<ActionResult> toggleFriendlyFire(UUID guildId, UUID requesterId);
 
+    /** Sets guild glow setting. Requires {@link GuildPermissionKey#GUILD_SETTINGS}. */
+    CompletableFuture<ActionResult> setGlow(UUID guildId, UUID requesterId, boolean enabled);
+
+    /** Toggles guild glow setting. Requires {@link GuildPermissionKey#GUILD_SETTINGS}. */
+    CompletableFuture<ActionResult> toggleGlow(UUID guildId, UUID requesterId);
+
     /**
      * Checks if player 1 (attacker) can hit player 2 (victim).
      * Returns true if hitting is allowed (e.g. self-hit, different guilds, or friendly fire enabled),

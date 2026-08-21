@@ -161,6 +161,7 @@ public final class JsonGuildRepository implements GuildRepository {
         obj.addProperty("xp", g.getXp());
         obj.addProperty("createdAt", g.getCreatedAt().toString());
         obj.addProperty("friendlyFire", g.isFriendlyFire());
+        obj.addProperty("glow", g.isGlow());
 
         // Icon
         obj.add("icon", serializeIcon(g.getIcon()));
@@ -184,6 +185,7 @@ public final class JsonGuildRepository implements GuildRepository {
             ro.addProperty("name", r.getName());
             ro.addProperty("index", r.getIndex());
             ro.addProperty("color", r.getColor().name());
+            ro.addProperty("glowColor", r.getGlowColor().name());
             ro.add("icon", serializeIcon(r.getIcon()));
             JsonArray perms = new JsonArray();
             r.getPermissions().forEach(p -> perms.add(p.name()));
@@ -232,11 +234,13 @@ public final class JsonGuildRepository implements GuildRepository {
             SerializableItemStack rIcon = deserializeIcon(ro.getAsJsonObject("icon"));
             RoleColor rColor = RoleColor.fromString(
                     ro.has("color") ? ro.get("color").getAsString() : null).orElse(RoleColor.WHITE);
+            RoleColor rGlowColor = RoleColor.fromString(
+                    ro.has("glowColor") ? ro.get("glowColor").getAsString() : null).orElse(rColor);
             Set<GuildPermissionKey> perms = new HashSet<>();
             for (JsonElement pe : ro.getAsJsonArray("permissions")) {
                 try { perms.add(GuildPermissionKey.valueOf(pe.getAsString())); } catch (Exception ignored) {}
             }
-            roles.add(new GuildRole(rName, rIndex, perms, rIcon, rColor));
+            roles.add(new GuildRole(rName, rIndex, perms, rIcon, rColor, rGlowColor));
         }
 
         Map<Integer, GuildRole> roleByIndex = new HashMap<>();
@@ -276,6 +280,7 @@ public final class JsonGuildRepository implements GuildRepository {
         }
 
         boolean friendlyFire = obj.has("friendlyFire") && obj.get("friendlyFire").getAsBoolean();
+        boolean glow = obj.has("glow") && obj.get("glow").getAsBoolean();
 
         Map<UUID, Long> contributions = new HashMap<>();
         if (obj.has("contributions") && obj.get("contributions").isJsonObject()) {
@@ -290,7 +295,7 @@ public final class JsonGuildRepository implements GuildRepository {
         }
 
         return new Guild(id, name, shortname, icon, level, xp, members, roles, createdAt,
-                ownedBadges, activeBadgeId, storage, friendlyFire, contributions);
+                ownedBadges, activeBadgeId, storage, friendlyFire, glow, contributions);
     }
 
     private JsonObject serializeIcon(SerializableItemStack icon) {

@@ -45,6 +45,12 @@ public interface RoleService {
     CompletableFuture<ActionResult> setRoleColor(UUID guildId, UUID requesterId, int roleIndex, RoleColor color);
 
     /**
+     * Sets the glow color of a role (one of the 16 dye colors).
+     * Requester must have {@code ROLE_MANAGEMENT}.
+     */
+    CompletableFuture<ActionResult> setRoleGlowColor(UUID guildId, UUID requesterId, int roleIndex, RoleColor glowColor);
+
+    /**
      * Replaces the full permission set of a role.
      * Requester must have {@code ROLE_MANAGEMENT}.
      * The Leader role (index 0) always retains all permissions regardless.

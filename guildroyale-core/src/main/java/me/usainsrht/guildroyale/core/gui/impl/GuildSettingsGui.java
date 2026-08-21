@@ -26,6 +26,7 @@ public final class GuildSettingsGui extends AbstractGui {
     private final GuildMember viewer;
     private final GuiManager guiManager;
     private final int friendlyFireSlot;
+    private final int glowSlot;
     private final int shortnameSlot;
     private final int iconSlot;
     private final int disbandSlot;
@@ -38,10 +39,11 @@ public final class GuildSettingsGui extends AbstractGui {
         this.guiManager = guiManager;
 
         GuiConfig gui = GuiItems.config();
-        this.friendlyFireSlot = gui != null ? gui.slot("settings.slots.friendly-fire", 20) : 20;
-        this.shortnameSlot = gui != null ? gui.slot("settings.slots.shortname", 22) : 22;
-        this.iconSlot = gui != null ? gui.slot("settings.slots.icon", 24) : 24;
-        this.disbandSlot = gui != null ? gui.slot("settings.slots.disband", 26) : 26;
+        this.friendlyFireSlot = gui != null ? gui.slot("settings.slots.friendly-fire", 19) : 19;
+        this.glowSlot = gui != null ? gui.slot("settings.slots.glow", 21) : 21;
+        this.shortnameSlot = gui != null ? gui.slot("settings.slots.shortname", 23) : 23;
+        this.iconSlot = gui != null ? gui.slot("settings.slots.icon", 25) : 25;
+        this.disbandSlot = gui != null ? gui.slot("settings.slots.disband", 31) : 31;
         this.backSlot = gui != null ? gui.slot("settings.slots.back", 49) : 49;
     }
 
@@ -66,6 +68,11 @@ public final class GuildSettingsGui extends AbstractGui {
                 ? "<green>Enabled"
                 : "<red>Disabled";
         setSlot(friendlyFireSlot, GuiItems.get("settings-friendly-fire", Placeholder.parsed("status", status)));
+
+        String glowStatus = guild.isGlow()
+                ? "<green>Enabled"
+                : "<red>Disabled";
+        setSlot(glowSlot, GuiItems.get("settings-glow", Placeholder.parsed("status", glowStatus)));
 
         setSlot(shortnameSlot, GuiItems.featureItem(guild, GuildFeature.SHORTNAME,
                 "settings-shortname", "settings-shortname-locked"));
@@ -95,6 +102,8 @@ public final class GuildSettingsGui extends AbstractGui {
             navigateBack(player);
         } else if (slot == friendlyFireSlot) {
             toggleFriendlyFire(player, plugin);
+        } else if (slot == glowSlot) {
+            toggleGlow(player, plugin);
         } else if (slot == shortnameSlot) {
             openShortname(player, plugin);
         } else if (slot == iconSlot) {
@@ -119,6 +128,28 @@ public final class GuildSettingsGui extends AbstractGui {
                                         plugin.getMessages().send(player, "friendly-fire-enabled");
                                     } else {
                                         plugin.getMessages().send(player, "friendly-fire-disabled");
+                                    }
+                                    reopen(player, plugin);
+                                }
+                                case ActionResult.Failure f ->
+                                        plugin.getMessages().send(player, f.reason());
+                            }
+                        }))
+        );
+    }
+
+    private void toggleGlow(Player player, GuildRoyalePlugin plugin) {
+        if (plugin == null) return;
+        plugin.getScheduler().runAsync(() ->
+                plugin.getGuildService().toggleGlow(guild.getId(), player.getUniqueId())
+                        .thenAccept(result -> plugin.getScheduler().runForEntity(player, () -> {
+                            switch (result) {
+                                case ActionResult.Success s -> {
+                                    boolean newSetting = !guild.isGlow();
+                                    if (newSetting) {
+                                        plugin.getMessages().send(player, "glow-enabled");
+                                    } else {
+                                        plugin.getMessages().send(player, "glow-disabled");
                                     }
                                     reopen(player, plugin);
                                 }

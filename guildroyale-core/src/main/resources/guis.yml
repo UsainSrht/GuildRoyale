@@ -139,7 +139,8 @@ role-editor:
   slots:
     info: 4
     set-icon: 45
-    set-color: 47
+    set-color: 46
+    set-glow-color: 47
     back: 49
     rename: 51
     delete: 53
@@ -147,6 +148,14 @@ role-editor:
 role-color:
   size: 54
   title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Role Color: <role></bold></gradient></shadow>"
+  slots:
+    back: 49
+  selected: "<green><bold><color> <dark_gray>« selected"
+  unselected: "<color_tag><bold><color>"
+
+role-glow-color:
+  size: 54
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Role Glow Color: <role></bold></gradient></shadow>"
   slots:
     back: 49
   selected: "<green><bold><color> <dark_gray>« selected"
@@ -188,10 +197,11 @@ settings:
   size: 54
   title: "<shadow:#000000FF><gradient:#aab7b8:#d5dbdb><bold>Guild Settings</bold></gradient></shadow>"
   slots:
-    friendly-fire: 20
-    shortname: 22
-    icon: 24
-    disband: 26
+    friendly-fire: 19
+    glow: 21
+    shortname: 23
+    icon: 25
+    disband: 31
     back: 49
 
 storage:
@@ -497,6 +507,19 @@ items:
       - " <yellow>Click <gray>to toggle status. "
       - ""
 
+  settings-glow:
+    material: glowstone_dust
+    name: "<gradient:#f4d03f:#f9e79f><bold>Guild Glow</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Makes all guild members glow "
+      - " <gray>to each other with their role's "
+      - " <gray>glow color. "
+      - " <gray>Status: <status> "
+      - ""
+      - " <yellow>Click <gray>to toggle status. "
+      - ""
+
   settings-shortname:
     material: name_tag
     name: "<gradient:#f4d03f:#f9e79f><bold>Shortname</bold></gradient>"
@@ -642,6 +665,7 @@ items:
       - ""
       - " <gray>Members: <white><members> "
       - " <gray>Color: <white><color> "
+      - " <gray>Glow Color: <white><glow_color> "
       - " <yellow>Click to edit "
       - ""
 
@@ -669,6 +693,7 @@ items:
     lore:
       - ""
       - " <gray>Color: <white><color> "
+      - " <gray>Glow Color: <white><glow_color> "
       - " <gray>Members: <white><members> "
       - ""
 
@@ -688,6 +713,15 @@ items:
       - ""
       - " <gray>Current: <white><color> "
       - " <yellow>Click <gray>to pick a dye color. "
+      - ""
+
+  role-editor-set-glow-color:
+    material: glowstone_dust
+    name: "<gradient:#f4d03f:#f9e79f><bold>Set Glow Color</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Current: <white><color> "
+      - " <yellow>Click <gray>to pick a glow color. "
       - ""
 
   role-editor-rename:

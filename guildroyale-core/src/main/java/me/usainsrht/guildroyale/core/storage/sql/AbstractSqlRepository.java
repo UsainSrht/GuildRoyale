@@ -110,12 +110,14 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     created_at   %s NOT NULL,
                     owned_badges TEXT,
                     active_badge TEXT,
-                    friendly_fire BOOLEAN NOT NULL DEFAULT 0
+                    friendly_fire BOOLEAN NOT NULL DEFAULT 0,
+                    glow         BOOLEAN NOT NULL DEFAULT 0
                 )""".formatted(uuid, guildName, shortname, timestamp));
 
             tryAddColumn(stmt, "guilds", "owned_badges", "TEXT");
             tryAddColumn(stmt, "guilds", "active_badge", "TEXT");
             tryAddColumn(stmt, "guilds", "friendly_fire", "BOOLEAN NOT NULL DEFAULT 0");
+            tryAddColumn(stmt, "guilds", "glow", "BOOLEAN NOT NULL DEFAULT 0");
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS guild_roles (
@@ -125,11 +127,13 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     icon_mat   TEXT,
                     icon_data  BLOB,
                     color      TEXT,
+                    glow_color TEXT,
                     PRIMARY KEY (guild_id, role_index),
                     FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
                 )""".formatted(uuid));
 
             tryAddColumn(stmt, "guild_roles", "color", "TEXT");
+            tryAddColumn(stmt, "guild_roles", "glow_color", "TEXT");
 
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS guild_role_permissions (
@@ -389,9 +393,10 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                 Set<String> ownedBadges = parseBadges(rs.getString("owned_badges"));
                 String activeBadge = rs.getString("active_badge");
                 boolean friendlyFire = rs.getBoolean("friendly_fire");
+                boolean glow = rs.getBoolean("glow");
                 guild = new Guild(guildId, name, shortname, icon, level, xp,
                         new ArrayList<>(), new ArrayList<>(), createdAt,
-                        ownedBadges, activeBadge, new HashMap<>(), friendlyFire, contributions);
+                        ownedBadges, activeBadge, new HashMap<>(), friendlyFire, glow, contributions);
             }
         }
 
@@ -406,7 +411,8 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     SerializableItemStack rIcon = new SerializableItemStack(
                             rs.getString("icon_mat"), rs.getBytes("icon_data"));
                     RoleColor rColor = RoleColor.fromString(rs.getString("color")).orElse(RoleColor.WHITE);
-                    guild.addRole(new GuildRole(rName, idx, loadPermissions(conn, id, idx), rIcon, rColor));
+                    RoleColor rGlowColor = RoleColor.fromString(rs.getString("glow_color")).orElse(rColor);
+                    guild.addRole(new GuildRole(rName, idx, loadPermissions(conn, id, idx), rIcon, rColor, rGlowColor));
                 }
             }
         }
@@ -475,8 +481,8 @@ public abstract class AbstractSqlRepository implements GuildRepository {
 
     private void upsertGuild(Connection conn, Guild g) throws SQLException {
         String sql = """
-            INSERT INTO guilds (id, name, shortname, icon_mat, icon_data, level, xp, created_at, owned_badges, active_badge, friendly_fire)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO guilds (id, name, shortname, icon_mat, icon_data, level, xp, created_at, owned_badges, active_badge, friendly_fire, glow)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """ + guildUpsertSuffix();
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, g.getId().toString());
@@ -490,6 +496,7 @@ public abstract class AbstractSqlRepository implements GuildRepository {
             ps.setString(9, String.join(",", g.getOwnedBadges()));
             ps.setString(10, g.getActiveBadgeId());
             ps.setBoolean(11, g.isFriendlyFire());
+            ps.setBoolean(12, g.isGlow());
             ps.executeUpdate();
         }
     }
@@ -529,13 +536,14 @@ public abstract class AbstractSqlRepository implements GuildRepository {
 
     private void upsertRole(Connection conn, String guildId, GuildRole role) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(
-                "INSERT INTO guild_roles (guild_id, role_index, name, icon_mat, icon_data, color) VALUES (?, ?, ?, ?, ?, ?)")) {
+                "INSERT INTO guild_roles (guild_id, role_index, name, icon_mat, icon_data, color, glow_color) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
             ps.setString(1, guildId);
             ps.setInt(2, role.getIndex());
             ps.setString(3, role.getName());
             ps.setString(4, role.getIcon().getMaterial());
             ps.setBytes(5, role.getIcon().getRawData());
             ps.setString(6, role.getColor().name());
+            ps.setString(7, role.getGlowColor().name());
             ps.executeUpdate();
         }
         for (GuildPermissionKey perm : role.getPermissions()) {

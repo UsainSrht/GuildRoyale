@@ -28,7 +28,11 @@ public final class ConfigManager {
         }
     }
 
-    public record DefaultRoleDefinition(String name, int index, RoleColor color, SerializableItemStack icon) {}
+    public record DefaultRoleDefinition(String name, int index, RoleColor color, RoleColor glowColor, SerializableItemStack icon) {
+        public DefaultRoleDefinition(String name, int index, RoleColor color, SerializableItemStack icon) {
+            this(name, index, color, color != null ? color : RoleColor.WHITE, icon);
+        }
+    }
 
     private final JavaPlugin plugin;
     private FileConfiguration cfg;
@@ -382,7 +386,7 @@ public final class ConfigManager {
                     rolePerms.add(permKey);
                 }
             }
-            roles.add(new GuildRole(def.name(), def.index(), rolePerms, def.icon(), def.color()));
+            roles.add(new GuildRole(def.name(), def.index(), rolePerms, def.icon(), def.color(), def.glowColor()));
         }
         return roles;
     }
@@ -440,6 +444,12 @@ public final class ConfigManager {
                 color = RoleColor.fromString(colorObj.toString()).orElse(RoleColor.WHITE);
             }
 
+            RoleColor glowColor = color;
+            Object glowColorObj = map.get("glow-color");
+            if (glowColorObj != null) {
+                glowColor = RoleColor.fromString(glowColorObj.toString()).orElse(color);
+            }
+
             SerializableItemStack icon = SerializableItemStack.EMPTY;
             Object iconObj = map.get("icon");
             if (iconObj != null) {
@@ -449,7 +459,7 @@ public final class ConfigManager {
                 }
             }
 
-            result.add(new DefaultRoleDefinition(name, index, color, icon));
+            result.add(new DefaultRoleDefinition(name, index, color, glowColor, icon));
         }
         if (result.isEmpty()) {
             return defaultFallbackRoles();
@@ -459,10 +469,10 @@ public final class ConfigManager {
 
     private List<DefaultRoleDefinition> defaultFallbackRoles() {
         return List.of(
-                new DefaultRoleDefinition("Leader", 0, RoleColor.YELLOW, SerializableItemStack.EMPTY),
-                new DefaultRoleDefinition("Co-Leader", 1, RoleColor.ORANGE, SerializableItemStack.EMPTY),
-                new DefaultRoleDefinition("Helper", 2, RoleColor.LIME, SerializableItemStack.EMPTY),
-                new DefaultRoleDefinition("Member", 3, RoleColor.GRAY, SerializableItemStack.EMPTY)
+                new DefaultRoleDefinition("Leader", 0, RoleColor.YELLOW, RoleColor.YELLOW, SerializableItemStack.EMPTY),
+                new DefaultRoleDefinition("Co-Leader", 1, RoleColor.ORANGE, RoleColor.ORANGE, SerializableItemStack.EMPTY),
+                new DefaultRoleDefinition("Helper", 2, RoleColor.LIME, RoleColor.LIME, SerializableItemStack.EMPTY),
+                new DefaultRoleDefinition("Member", 3, RoleColor.GRAY, RoleColor.GRAY, SerializableItemStack.EMPTY)
         );
     }
 

@@ -37,6 +37,7 @@ public final class RoleEditorGui extends AbstractGui {
     private final int infoSlot;
     private final int setIconSlot;
     private final int setColorSlot;
+    private final int setGlowColorSlot;
     private final int renameSlot;
     private final int deleteSlot;
     private final int backSlot;
@@ -54,7 +55,8 @@ public final class RoleEditorGui extends AbstractGui {
         GuiConfig gui = GuiItems.config();
         this.infoSlot = gui != null ? gui.slot("role-editor.slots.info", 4) : 4;
         this.setIconSlot = gui != null ? gui.slot("role-editor.slots.set-icon", 45) : 45;
-        this.setColorSlot = gui != null ? gui.slot("role-editor.slots.set-color", 47) : 47;
+        this.setColorSlot = gui != null ? gui.slot("role-editor.slots.set-color", 46) : 46;
+        this.setGlowColorSlot = gui != null ? gui.slot("role-editor.slots.set-glow-color", 47) : 47;
         this.renameSlot = gui != null ? gui.slot("role-editor.slots.rename", 51) : 51;
         this.deleteSlot = gui != null ? gui.slot("role-editor.slots.delete", 53) : 53;
         this.backSlot = gui != null ? gui.slot("role-editor.slots.back", 49) : 49;
@@ -87,10 +89,12 @@ public final class RoleEditorGui extends AbstractGui {
         GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
         ConfigManager configManager = plugin != null ? plugin.getConfigManager() : null;
         String colorName = configManager != null ? configManager.getRoleColorName(role.getColor()) : role.getColor().name();
+        String glowColorName = configManager != null ? configManager.getRoleColorName(role.getGlowColor()) : role.getGlowColor().name();
 
         ItemStack info = GuiItems.get("role-editor-info",
                 Placeholder.unparsed("role", role.getName()),
                 Placeholder.parsed("color", colorName),
+                Placeholder.parsed("glow_color", glowColorName),
                 Placeholder.unparsed("members", String.valueOf(roleMembers.size())));
         ItemStack roleIcon = ItemStackAdapter.fromSerializable(role.getIcon());
         if (!roleIcon.getType().isAir()) {
@@ -118,6 +122,7 @@ public final class RoleEditorGui extends AbstractGui {
             }
             setSlot(setIconSlot, setIconItem);
             setSlot(setColorSlot, colorButton());
+            setSlot(setGlowColorSlot, glowColorButton());
             setSlot(renameSlot, GuiItems.get("role-editor-rename"));
             if (role.getIndex() != 0) {
                 setSlot(deleteSlot, GuiItems.get("role-editor-delete"));
@@ -134,6 +139,22 @@ public final class RoleEditorGui extends AbstractGui {
         ConfigManager configManager = plugin != null ? plugin.getConfigManager() : null;
         String colorName = configManager != null ? configManager.getRoleColorName(role.getColor()) : role.getColor().name();
         ItemStack template = GuiItems.get("role-editor-set-color",
+                Placeholder.parsed("color", colorName));
+        ItemStack item = new ItemStack(dye);
+        var meta = template.getItemMeta();
+        if (meta != null) {
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private ItemStack glowColorButton() {
+        Material dye = Material.matchMaterial(role.getGlowColor().dyeMaterial());
+        if (dye == null) dye = Material.WHITE_DYE;
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        ConfigManager configManager = plugin != null ? plugin.getConfigManager() : null;
+        String colorName = configManager != null ? configManager.getRoleColorName(role.getGlowColor()) : role.getGlowColor().name();
+        ItemStack template = GuiItems.get("role-editor-set-glow-color",
                 Placeholder.parsed("color", colorName));
         ItemStack item = new ItemStack(dye);
         var meta = template.getItemMeta();
@@ -175,7 +196,11 @@ public final class RoleEditorGui extends AbstractGui {
         if (slot == setIconSlot) {
             changeRoleIcon(player, plugin, event.getCursor());
         } else if (slot == setColorSlot) {
-            new RoleColorGui(guild, role, viewer, guiManager, this)
+            new RoleColorGui(guild, role, viewer, guiManager, this, RoleColorGui.Mode.ROLE_COLOR)
+                    .returnTo(p -> reopen(p, guild))
+                    .open(player);
+        } else if (slot == setGlowColorSlot) {
+            new RoleColorGui(guild, role, viewer, guiManager, this, RoleColorGui.Mode.GLOW_COLOR)
                     .returnTo(p -> reopen(p, guild))
                     .open(player);
         } else if (slot == renameSlot) {

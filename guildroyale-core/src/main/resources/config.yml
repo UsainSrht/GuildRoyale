@@ -316,20 +316,24 @@ commands:
           resetcooldown: resetcooldown
 
 # ── Default roles ────────────────────────────────────────────────
-# Configure default role names, indexes, and colors for newly created guilds
+# Configure default role names, indexes, colors, and glow colors for newly created guilds
 default-roles:
   - name: Leader
     index: 0
     color: YELLOW
+    glow-color: YELLOW
   - name: Co-Leader
     index: 1
     color: ORANGE
+    glow-color: ORANGE
   - name: Helper
     index: 2
     color: LIME
+    glow-color: LIME
   - name: Member
     index: 3
     color: GRAY
+    glow-color: GRAY
 
 # ── Guild Permissions (customizable display names, icons & default role index) ──
 # index: default minimum role index required for this permission (roles with role index <= permission index will have this permission by default)

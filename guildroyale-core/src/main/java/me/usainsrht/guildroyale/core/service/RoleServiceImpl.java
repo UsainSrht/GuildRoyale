@@ -103,6 +103,25 @@ public final class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    public CompletableFuture<ActionResult> setRoleGlowColor(UUID guildId, UUID requesterId, int roleIndex, RoleColor glowColor) {
+        if (glowColor == null) return done(ActionResult.failure("role-glow-color-invalid"));
+        return requireGuildAndPermission(guildId, requesterId, GuildPermissionKey.ROLE_MANAGEMENT, guild -> {
+            Optional<GuildRole> roleOpt = guild.getRole(roleIndex);
+            if (roleOpt.isEmpty()) return ActionResult.failure("role-not-found");
+            roleOpt.get().setGlowColor(glowColor);
+            return null;
+        }).thenApply(result -> {
+            if (result instanceof ActionResult.Success) {
+                me.usainsrht.guildroyale.core.GuildRoyalePlugin plugin = me.usainsrht.guildroyale.core.GuildRoyalePlugin.getInstance();
+                if (plugin != null && plugin.getGlowManager() != null) {
+                    repo.findById(guildId).thenAccept(opt -> opt.ifPresent(g -> plugin.getGlowManager().updateGuildGlow(g)));
+                }
+            }
+            return result;
+        });
+    }
+
+    @Override
     public CompletableFuture<ActionResult> setRolePermissions(UUID guildId, UUID requesterId, int roleIndex, Set<GuildPermissionKey> permissions) {
         if (roleIndex == 0) return done(ActionResult.failure("role-leader-protected"));
         return requireGuildAndPermission(guildId, requesterId, GuildPermissionKey.ROLE_MANAGEMENT, guild -> {

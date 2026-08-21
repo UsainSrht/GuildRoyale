@@ -5,6 +5,7 @@ import me.usainsrht.guildroyale.api.permission.GuildPermissionKey;
 import me.usainsrht.guildroyale.api.service.ActionResult;
 import me.usainsrht.guildroyale.api.service.GuildService;
 import me.usainsrht.guildroyale.api.storage.GuildRepository;
+import me.usainsrht.guildroyale.core.GuildRoyalePlugin;
 import me.usainsrht.guildroyale.core.config.BadgeDefinition;
 import me.usainsrht.guildroyale.core.config.ConfigManager;
 import me.usainsrht.guildroyale.core.config.ItemRequirement;
@@ -377,6 +378,29 @@ public final class GuildServiceImpl implements GuildService {
         return repo.findById(guildId).thenCompose(opt -> {
             if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
             return setFriendlyFire(guildId, requesterId, !opt.get().isFriendlyFire());
+        });
+    }
+
+    @Override
+    public CompletableFuture<ActionResult> setGlow(UUID guildId, UUID requesterId, boolean enabled) {
+        return mutateGuild(guildId, requesterId, GuildPermissionKey.GUILD_SETTINGS, guild -> {
+            guild.setGlow(enabled);
+        }).thenApply(result -> {
+            if (result instanceof ActionResult.Success) {
+                GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+                if (plugin != null && plugin.getGlowManager() != null) {
+                    repo.findById(guildId).thenAccept(opt -> opt.ifPresent(g -> plugin.getGlowManager().updateGuildGlow(g)));
+                }
+            }
+            return result;
+        });
+    }
+
+    @Override
+    public CompletableFuture<ActionResult> toggleGlow(UUID guildId, UUID requesterId) {
+        return repo.findById(guildId).thenCompose(opt -> {
+            if (opt.isEmpty()) return done(ActionResult.failure("invalid-guild"));
+            return setGlow(guildId, requesterId, !opt.get().isGlow());
         });
     }
 

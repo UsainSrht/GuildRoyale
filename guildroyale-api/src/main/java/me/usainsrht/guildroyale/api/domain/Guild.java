@@ -22,13 +22,14 @@ public final class Guild {
     private String activeBadgeId;
     private final Map<Integer, SerializableItemStack> storage;
     private boolean friendlyFire;
+    private boolean glow;
     private final Map<UUID, Long> contributions;
 
     public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
                  int level, long xp, List<GuildMember> members, List<GuildRole> roles,
                  Instant createdAt) {
         this(id, name, shortname, icon, level, xp, members, roles, createdAt,
-                Set.of(), null, Map.of(), false, Map.of());
+                Set.of(), null, Map.of(), false, false, Map.of());
     }
 
     public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
@@ -36,7 +37,7 @@ public final class Guild {
                  Instant createdAt, Set<String> ownedBadges, String activeBadgeId,
                  Map<Integer, SerializableItemStack> storage) {
         this(id, name, shortname, icon, level, xp, members, roles, createdAt,
-                ownedBadges, activeBadgeId, storage, false, Map.of());
+                ownedBadges, activeBadgeId, storage, false, false, Map.of());
     }
 
     public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
@@ -44,7 +45,7 @@ public final class Guild {
                  Instant createdAt, Set<String> ownedBadges, String activeBadgeId,
                  Map<Integer, SerializableItemStack> storage, boolean friendlyFire) {
         this(id, name, shortname, icon, level, xp, members, roles, createdAt,
-                ownedBadges, activeBadgeId, storage, friendlyFire, Map.of());
+                ownedBadges, activeBadgeId, storage, friendlyFire, false, Map.of());
     }
 
     public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
@@ -52,6 +53,15 @@ public final class Guild {
                  Instant createdAt, Set<String> ownedBadges, String activeBadgeId,
                  Map<Integer, SerializableItemStack> storage, boolean friendlyFire,
                  Map<UUID, Long> contributions) {
+        this(id, name, shortname, icon, level, xp, members, roles, createdAt,
+                ownedBadges, activeBadgeId, storage, friendlyFire, false, contributions);
+    }
+
+    public Guild(UUID id, String name, String shortname, SerializableItemStack icon,
+                 int level, long xp, List<GuildMember> members, List<GuildRole> roles,
+                 Instant createdAt, Set<String> ownedBadges, String activeBadgeId,
+                 Map<Integer, SerializableItemStack> storage, boolean friendlyFire,
+                 boolean glow, Map<UUID, Long> contributions) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = Objects.requireNonNull(name, "name");
         this.shortname = Objects.requireNonNull(shortname, "shortname");
@@ -75,6 +85,7 @@ public final class Guild {
             });
         }
         this.friendlyFire = friendlyFire;
+        this.glow = glow;
         this.contributions = new HashMap<>();
         if (contributions != null) {
             contributions.forEach((pid, val) -> {
@@ -123,6 +134,9 @@ public final class Guild {
 
     public boolean isFriendlyFire() { return friendlyFire; }
     public void setFriendlyFire(boolean friendlyFire) { this.friendlyFire = friendlyFire; }
+
+    public boolean isGlow() { return glow; }
+    public void setGlow(boolean glow) { this.glow = glow; }
 
     // ── Badges ───────────────────────────────────────────────────────────────
 

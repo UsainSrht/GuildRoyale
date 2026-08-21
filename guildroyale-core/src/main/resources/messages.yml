@@ -126,9 +126,11 @@ role-max-reached: "<red>Maximum number of roles reached."
 role-leader-protected: "<red>The leader role cannot be modified this way."
 role-color-updated: "<green>Role color set to <gold><color></gold>."
 role-color-invalid: "<red>Invalid role color."
+role-glow-color-updated: "<green>Role glow color set to <gold><color></gold>."
+role-glow-color-invalid: "<red>Invalid role glow color."
 permission-toggled: "<green>Permission toggled for role <gold><role></gold>."
 permission-invalid: "<red>Invalid permission."
-role-usage: "<red>Usage: <yellow>/<cmd> <sub> <create|delete|rename|setpermission>"
+role-usage: "<red>Usage: <yellow>/<cmd> <sub> <create|delete|rename|setpermission|setcolor|setglowcolor>"
 
 # ── Icon ──────────────────────────────────────────────────────────
 icon-updated:
@@ -193,6 +195,8 @@ must-be-leader: "<red>Only the guild leader can do this."
 # ── GUI hints ─────────────────────────────────────────────────────
 friendly-fire-enabled: "<green>Friendly fire has been enabled for your guild."
 friendly-fire-disabled: "<red>Friendly fire has been disabled for your guild."
+glow-enabled: "<green>Guild glow has been enabled for your guild."
+glow-disabled: "<red>Guild glow has been disabled for your guild."
 gui-settings-hint: "<gray>Use <yellow>/guild shortname</yellow> or <yellow>/guild icon</yellow> to update settings."
 gui-disband-hint: "<red>To disband, run <yellow>/guild disband</yellow> as the leader."
 

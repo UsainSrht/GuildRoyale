@@ -149,6 +149,15 @@
             <artifactId>YamlMessageAPI</artifactId>
             <version>1.0.0</version>
         </dependency>
+
+        <!-- GlowingEntities — per-player glowing effects (shadeable) -->
+        <dependency>
+            <groupId>fr.skytasul</groupId>
+            <artifactId>glowingentities</artifactId>
+            <version>2.0.1</version>
+            <scope>compile</scope>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -172,6 +181,33 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm</artifactId>
+                        <version>9.8</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm-commons</artifactId>
+                        <version>9.8</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm-tree</artifactId>
+                        <version>9.8</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm-analysis</artifactId>
+                        <version>9.8</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.ow2.asm</groupId>
+                        <artifactId>asm-util</artifactId>
+                        <version>9.8</version>
+                    </dependency>
+                </dependencies>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -181,7 +217,7 @@
                         <configuration>
                             <!-- The shaded jar is consumed by a server, never by Maven. -->
                             <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <!-- API module + shadeable ItemAPI & YamlMessageAPI libraries are bundled;
+                            <!-- API module + shadeable libraries are bundled;
                                  other external libraries are loaded at runtime by GuildRoyaleLoader. -->
                             <artifactSet>
                                 <includes>
@@ -189,8 +225,15 @@
                                     <include>me.usainsrht.itemapi:itemtext</include>
                                     <include>me.usainsrht.itemapi:yamlitem</include>
                                     <include>me.usainsrht:YamlMessageAPI</include>
+                                    <include>fr.skytasul:glowingentities</include>
                                 </includes>
                             </artifactSet>
+                            <relocations>
+                                <relocation>
+                                    <pattern>fr.skytasul.glowingentities</pattern>
+                                    <shadedPattern>me.usainsrht.guildroyale.core.lib.glowingentities</shadedPattern>
+                                </relocation>
+                            </relocations>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
