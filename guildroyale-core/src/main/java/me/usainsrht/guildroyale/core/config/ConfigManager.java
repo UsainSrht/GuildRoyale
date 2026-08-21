@@ -36,6 +36,7 @@ public final class ConfigManager {
     private Map<GuildPermissionKey, PermissionDisplay> permissions = Map.of();
     private Map<RoleColor, String> roleColorNames = Map.of();
     private List<DefaultRoleDefinition> defaultRoles = List.of();
+    private MissionConfig missionConfig;
 
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -49,6 +50,11 @@ public final class ConfigManager {
         permissions = loadPermissions();
         roleColorNames = loadRoleColorNames();
         defaultRoles = loadDefaultRoles();
+        missionConfig = new MissionConfig(cfg);
+    }
+
+    public MissionConfig getMissionConfig() {
+        return missionConfig;
     }
 
     // ── Storage ─────────────────────────────────────────────────
@@ -463,7 +469,7 @@ public final class ConfigManager {
     private static int fallbackDefaultPermissionIndex(GuildPermissionKey key) {
         return switch (key) {
             case ROLE_MANAGEMENT, DISBANDMENT -> 0;
-            case MEMBER_MANAGEMENT, KICK, GUILD_SETTINGS, ICON_CHANGE, SHORTNAME_CHANGE, BADGE_MANAGE, BANK_WITHDRAW -> 1;
+            case MEMBER_MANAGEMENT, KICK, GUILD_SETTINGS, ICON_CHANGE, SHORTNAME_CHANGE, BADGE_MANAGE, BANK_WITHDRAW, MISSION_START -> 1;
             case INVITE, STORAGE_ACCESS, BANK_VIEW, BANK_DEPOSIT -> 2;
         };
     }

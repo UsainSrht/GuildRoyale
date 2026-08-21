@@ -49,6 +49,7 @@ public final class GuildMainGui extends AbstractGui {
     private final int storageSlot;
     private final int bankSlot;
     private final int badgesSlot;
+    private final int missionsSlot;
     private final int permissionsSlot;
     private final int settingsSlot;
     private final int iconSlot;
@@ -65,6 +66,7 @@ public final class GuildMainGui extends AbstractGui {
         this.levelSlot = gui != null ? gui.slot("main.slots.level", gui.slot("main.slots.xp", 21)) : 21;
         this.membersSlot = gui != null ? gui.slot("main.slots.members", 22) : 22;
         this.rolesSlot = gui != null ? gui.slot("main.slots.roles", 24) : 24;
+        this.missionsSlot = gui != null ? gui.slot("main.slots.missions", 28) : 28;
         this.leaderboardSlot = gui != null ? gui.slot("main.slots.leaderboard", 29) : 29;
         this.storageSlot = gui != null ? gui.slot("main.slots.storage", 31) : 31;
         this.bankSlot = gui != null ? gui.slot("main.slots.bank", 33) : 33;
@@ -106,6 +108,9 @@ public final class GuildMainGui extends AbstractGui {
                 "main-bank", "main-bank-locked"));
         setSlot(badgesSlot, GuiItems.featureItem(guild, GuildFeature.BADGE,
                 "main-badges", "main-badges-locked"));
+        GuildRoyalePlugin mainPlugin = GuildRoyalePlugin.getInstance();
+        boolean hasActiveMission = mainPlugin != null && mainPlugin.getMissionService() != null && mainPlugin.getMissionService().isMissionActive(guild.getId());
+        setSlot(missionsSlot, GuiItems.get(hasActiveMission ? "main-missions-active" : "main-missions"));
         setSlot(permissionsSlot, GuiItems.get("main-permissions"));
         setSlot(settingsSlot, GuiItems.get("main-settings"));
     }
@@ -276,6 +281,10 @@ public final class GuildMainGui extends AbstractGui {
                 return true;
             }
             new BadgesGui(guild, viewer, guiManager)
+                    .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))
+                    .open(player);
+        } else if (slot == missionsSlot) {
+            new GuildMissionGui(guild, viewer, guiManager)
                     .returnTo(p -> new GuildMainGui(guild, viewer, guiManager).open(p))
                     .open(player);
         } else if (slot == permissionsSlot) {

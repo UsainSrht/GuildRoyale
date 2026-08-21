@@ -41,4 +41,25 @@ public final class StorageFactory {
             }
         };
     }
+
+    public static me.usainsrht.guildroyale.api.storage.MissionRepository createMissionRepository(
+            JavaPlugin plugin, ConfigManager config, FoliaScheduler scheduler, GuildRepository guildRepo) {
+        StorageType type = StorageType.fromString(config.getStorageType());
+        return switch (type) {
+            case SQLITE -> {
+                SQLiteGuildRepository sqlRepo = (SQLiteGuildRepository) guildRepo;
+                yield new me.usainsrht.guildroyale.core.storage.sql.SqlMissionRepository(
+                        sqlRepo.getDataSource(), scheduler, false);
+            }
+            case MYSQL -> {
+                MySQLGuildRepository sqlRepo = (MySQLGuildRepository) guildRepo;
+                yield new me.usainsrht.guildroyale.core.storage.sql.SqlMissionRepository(
+                        sqlRepo.getDataSource(), scheduler, true);
+            }
+            case JSON -> {
+                File dataDir = new File(plugin.getDataFolder(), "data/missions");
+                yield new me.usainsrht.guildroyale.core.storage.json.JsonMissionRepository(dataDir, scheduler);
+            }
+        };
+    }
 }

@@ -54,6 +54,9 @@ public final class GuildAdminCommandRegistrar {
                     sender.sendMessage(mm.deserialize(
                             "  <gray>/" + cmd + " <yellow>" + cfg.adminSub("badge")
                                     + " <white><grant|revoke> <guild> <id>"));
+                    sender.sendMessage(mm.deserialize(
+                            "  <gray>/" + cmd + " <yellow>" + cfg.adminSub("mission")
+                                    + " <white><start|stop|complete|addprogress|removeprogress|resetcooldown> <guild> ..."));
                     return 1;
                 })
                 .then(Commands.literal(cfg.adminSub("reload"))
@@ -166,6 +169,7 @@ public final class GuildAdminCommandRegistrar {
                                     );
                                     return 1;
                                 })))
+                .then(buildMissionNode(cfg.adminSub("mission")))
                 .build();
 
         commands.register(root, "GuildRoyale admin commands", cfg.adminAliases());
@@ -196,6 +200,139 @@ public final class GuildAdminCommandRegistrar {
                             plugin.getMessages().send(ctx.getSource().getSender(), result.failureReasonOrEmpty());
                         }
                     });
+                })
+        );
+        return 1;
+    }
+
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<io.papermc.paper.command.brigadier.CommandSourceStack>
+    buildMissionNode(String label) {
+        return Commands.literal(label)
+                .then(Commands.literal("start")
+                        .then(Commands.argument("guild", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+                                    if (plugin == null) return 0;
+                                    String guildName = StringArgumentType.getString(ctx, "guild");
+                                    plugin.getScheduler().runAsync(() ->
+                                            plugin.getGuildService().getGuildByName(guildName).thenCompose(opt -> {
+                                                if (opt.isEmpty()) {
+                                                    plugin.getMessages().send(ctx.getSource().getSender(), "invalid-guild");
+                                                    return java.util.concurrent.CompletableFuture.completedFuture(null);
+                                                }
+                                                return plugin.getMissionService().adminStartMission(opt.get().getId())
+                                                        .thenRun(() -> plugin.getMessages().send(ctx.getSource().getSender(), "admin-mission-started",
+                                                                Placeholder.unparsed("guild", guildName)));
+                                            })
+                                    );
+                                    return 1;
+                                })))
+                .then(Commands.literal("stop")
+                        .then(Commands.argument("guild", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+                                    if (plugin == null) return 0;
+                                    String guildName = StringArgumentType.getString(ctx, "guild");
+                                    plugin.getScheduler().runAsync(() ->
+                                            plugin.getGuildService().getGuildByName(guildName).thenCompose(opt -> {
+                                                if (opt.isEmpty()) {
+                                                    plugin.getMessages().send(ctx.getSource().getSender(), "invalid-guild");
+                                                    return java.util.concurrent.CompletableFuture.completedFuture(null);
+                                                }
+                                                return plugin.getMissionService().adminStopMission(opt.get().getId())
+                                                        .thenRun(() -> plugin.getMessages().send(ctx.getSource().getSender(), "admin-mission-stopped",
+                                                                Placeholder.unparsed("guild", guildName)));
+                                            })
+                                    );
+                                    return 1;
+                                })))
+                .then(Commands.literal("complete")
+                        .then(Commands.argument("guild", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+                                    if (plugin == null) return 0;
+                                    String guildName = StringArgumentType.getString(ctx, "guild");
+                                    plugin.getScheduler().runAsync(() ->
+                                            plugin.getGuildService().getGuildByName(guildName).thenCompose(opt -> {
+                                                if (opt.isEmpty()) {
+                                                    plugin.getMessages().send(ctx.getSource().getSender(), "invalid-guild");
+                                                    return java.util.concurrent.CompletableFuture.completedFuture(null);
+                                                }
+                                                return plugin.getMissionService().adminCompleteMission(opt.get().getId())
+                                                        .thenRun(() -> plugin.getMessages().send(ctx.getSource().getSender(), "admin-mission-completed",
+                                                                Placeholder.unparsed("guild", guildName)));
+                                            })
+                                    );
+                                    return 1;
+                                })))
+                .then(Commands.literal("addprogress")
+                        .then(Commands.argument("guild", StringArgumentType.word())
+                                .then(Commands.argument("task", StringArgumentType.word())
+                                        .then(Commands.argument("amount", LongArgumentType.longArg(1))
+                                                .executes(ctx -> executeAdminProgress(ctx, true, null))
+                                                .then(Commands.argument("player", StringArgumentType.word())
+                                                        .executes(ctx -> executeAdminProgress(ctx, true, StringArgumentType.getString(ctx, "player"))))))))
+                .then(Commands.literal("removeprogress")
+                        .then(Commands.argument("guild", StringArgumentType.word())
+                                .then(Commands.argument("task", StringArgumentType.word())
+                                        .then(Commands.argument("amount", LongArgumentType.longArg(1))
+                                                .executes(ctx -> executeAdminProgress(ctx, false, null))
+                                                .then(Commands.argument("player", StringArgumentType.word())
+                                                        .executes(ctx -> executeAdminProgress(ctx, false, StringArgumentType.getString(ctx, "player"))))))))
+                .then(Commands.literal("resetcooldown")
+                        .then(Commands.argument("guild", StringArgumentType.word())
+                                .executes(ctx -> {
+                                    GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+                                    if (plugin == null) return 0;
+                                    String guildName = StringArgumentType.getString(ctx, "guild");
+                                    plugin.getScheduler().runAsync(() ->
+                                            plugin.getGuildService().getGuildByName(guildName).thenCompose(opt -> {
+                                                if (opt.isEmpty()) {
+                                                    plugin.getMessages().send(ctx.getSource().getSender(), "invalid-guild");
+                                                    return java.util.concurrent.CompletableFuture.completedFuture(null);
+                                                }
+                                                return plugin.getMissionService().adminResetCooldown(opt.get().getId())
+                                                        .thenRun(() -> plugin.getMessages().send(ctx.getSource().getSender(), "admin-mission-cooldown-reset",
+                                                                Placeholder.unparsed("guild", guildName)));
+                                            })
+                                    );
+                                    return 1;
+                                })));
+    }
+
+    private static int executeAdminProgress(com.mojang.brigadier.context.CommandContext<
+            io.papermc.paper.command.brigadier.CommandSourceStack> ctx, boolean add, String playerName) {
+        GuildRoyalePlugin plugin = GuildRoyalePlugin.getInstance();
+        if (plugin == null) return 0;
+
+        String guildName = StringArgumentType.getString(ctx, "guild");
+        String taskId = StringArgumentType.getString(ctx, "task");
+        long amount = LongArgumentType.getLong(ctx, "amount");
+
+        java.util.UUID contributorId = null;
+        if (playerName != null) {
+            org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(playerName);
+            if (op.hasPlayedBefore() || op.isOnline()) {
+                contributorId = op.getUniqueId();
+            }
+        }
+
+        final java.util.UUID finalContributor = contributorId;
+        plugin.getScheduler().runAsync(() ->
+                plugin.getGuildService().getGuildByName(guildName).thenCompose(opt -> {
+                    if (opt.isEmpty()) {
+                        plugin.getMessages().send(ctx.getSource().getSender(), "invalid-guild");
+                        return java.util.concurrent.CompletableFuture.completedFuture(null);
+                    }
+                    var future = add
+                            ? plugin.getMissionService().adminAddProgress(opt.get().getId(), taskId, amount, finalContributor)
+                            : plugin.getMissionService().adminRemoveProgress(opt.get().getId(), taskId, amount, finalContributor);
+                    return future.thenRun(() ->
+                            plugin.getMessages().send(ctx.getSource().getSender(),
+                                    add ? "admin-mission-progress-added" : "admin-mission-progress-removed",
+                                    Placeholder.unparsed("guild", guildName),
+                                    Placeholder.unparsed("task", taskId),
+                                    Placeholder.unparsed("amount", String.valueOf(amount))));
                 })
         );
         return 1;

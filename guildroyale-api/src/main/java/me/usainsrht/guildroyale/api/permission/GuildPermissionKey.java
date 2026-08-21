@@ -50,7 +50,10 @@ public enum GuildPermissionKey {
     BANK_DEPOSIT,
 
     /** Withdraw money from the guild bank. */
-    BANK_WITHDRAW;
+    BANK_WITHDRAW,
+
+    /** Start a guild mission. */
+    MISSION_START;
 
     /** Returns the lowercase string key used in config/storage. */
     public String key() { return name().toLowerCase(); }

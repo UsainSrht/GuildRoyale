@@ -48,6 +48,7 @@ public final class CommandConfig {
     public static final String PERM_BADGE       = "guildroyale.command.badge";
     public static final String PERM_STORAGE     = "guildroyale.command.storage";
     public static final String PERM_BANK        = "guildroyale.command.bank";
+    public static final String PERM_MISSION     = "guildroyale.command.mission";
     public static final String PERM_HELP        = "guildroyale.command.help";
     public static final String PERM_ADMIN       = "guildroyale.admin";
 
@@ -123,6 +124,7 @@ public final class CommandConfig {
         guildSubs.put("badge",       readSpec(cfg, "commands.guild.subcommands.badge", "badge"));
         guildSubs.put("storage",     readSpec(cfg, "commands.guild.subcommands.storage", "storage"));
         guildSubs.put("bank",        readSpec(cfg, "commands.guild.subcommands.bank", "bank"));
+        guildSubs.put("mission",     readSpec(cfg, "commands.guild.subcommands.mission", "mission"));
         guildSubs.put("help",        readSpec(cfg, "commands.guild.subcommands.help", "help"));
 
         String adminName = cfg.getString("commands.admin.name", "guildadmin");
@@ -135,6 +137,7 @@ public final class CommandConfig {
         adminSubs.put("setlevel", readSpec(cfg, "commands.admin.subcommands.setlevel", "setlevel"));
         adminSubs.put("delete",   readSpec(cfg, "commands.admin.subcommands.delete", "delete"));
         adminSubs.put("badge",    readSpec(cfg, "commands.admin.subcommands.badge", "badge"));
+        adminSubs.put("mission",  readSpec(cfg, "commands.admin.subcommands.mission", "mission"));
 
         return new CommandConfig(guildName, guildAliases, guildSubs, adminName, adminAliases, adminSubs);
     }

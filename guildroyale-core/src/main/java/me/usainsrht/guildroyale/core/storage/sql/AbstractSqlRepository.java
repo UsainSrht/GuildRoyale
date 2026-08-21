@@ -15,6 +15,12 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
+import com.google.gson.*;
+import me.usainsrht.guildroyale.api.domain.mission.ActiveMission;
+import me.usainsrht.guildroyale.api.domain.mission.GuildMissionData;
+import me.usainsrht.guildroyale.api.domain.mission.MissionTaskProgress;
+import me.usainsrht.guildroyale.api.storage.MissionRepository;
+
 /**
  * Abstract SQL-backed {@link GuildRepository} using HikariCP.
  *
@@ -56,6 +62,10 @@ public abstract class AbstractSqlRepository implements GuildRepository {
      * {@code VALUES (...)} clause. It must update every mutable column.
      */
     protected abstract String guildUpsertSuffix();
+
+    public HikariDataSource getDataSource() {
+        return dataSource;
+    }
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -159,6 +169,18 @@ public abstract class AbstractSqlRepository implements GuildRepository {
                     PRIMARY KEY (guild_id, player_id),
                     FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
                 )""".formatted(uuid, uuid));
+
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS guild_missions (
+                    guild_id          %s PRIMARY KEY,
+                    has_active        BOOLEAN NOT NULL DEFAULT 0,
+                    started_at        %s,
+                    expires_at        %s,
+                    last_started_at   %s,
+                    last_completed_at %s,
+                    tasks_data        TEXT,
+                    FOREIGN KEY (guild_id) REFERENCES guilds(id) ON DELETE CASCADE
+                )""".formatted(uuid, timestamp, timestamp, timestamp, timestamp));
 
             // MySQL rejects CREATE INDEX IF NOT EXISTS, so tolerate "already exists".
             tryExecute(stmt, "CREATE INDEX idx_guild_members_player ON guild_members (player_id)");

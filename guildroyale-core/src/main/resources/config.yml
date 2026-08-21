@@ -76,6 +76,110 @@ features:
   bank:
     unlock-level: 2
 
+# ── Guild Missions ───────────────────────────────────────────────
+missions:
+  enabled: true
+  # Duration of an active mission in seconds (default: 7200 = 2 hours)
+  duration: 7200
+
+  # Cooldown between missions: DELAY | DAILY | WEEKLY
+  cooldown:
+    type: DAILY
+    # Used when type is DELAY (in seconds)
+    delay-seconds: 86400
+    # Used when type is DAILY (format HH:mm, e.g. "12:00" = 12pm reset)
+    daily-reset-time: "12:00"
+    # Used when type is WEEKLY (reset day and time)
+    weekly-reset-day: "MONDAY"
+    weekly-reset-time: "00:00"
+    # Timezone used for daily/weekly calculations (e.g. UTC, America/New_York)
+    timezone: "UTC"
+
+  # Requirements to start a mission
+  requirements:
+    permission:
+      enabled: false
+      node: "guildroyale.mission.start"
+    money:
+      enabled: true
+      cost: 1000.0
+      # Where money is deducted from: "BANK" (guild bank) or "PLAYER" (starter's account)
+      take-from: "BANK"
+    items:
+      enabled: false
+      requirements:
+        - material: DIAMOND
+          amount: 5
+
+  # Rewards distributed to the guild upon successful mission completion
+  rewards:
+    xp: 5000
+    # Deposited into the guild bank
+    money: 2500.0
+
+  # Penalties applied to the guild if time expires before tasks are complete
+  penalties:
+    # Deducted from guild XP (can go negative; level does not decrease)
+    xp: 2500
+    # Withdrawn from the guild bank
+    money: 1000.0
+
+  # Adventure Bossbar displayed to online guild members during an active mission
+  bossbar:
+    enabled: true
+    title: "<gradient:#55c57a:#a8e6c1><bold>Guild Mission</bold></gradient> <dark_gray>•</dark_gray> <green><percent>%</green> <dark_gray>(<white><completed_tasks>/<total_tasks> tasks<dark_gray>)</dark_gray> <dark_gray>•</dark_gray> <yellow><time_remaining></yellow>"
+    color: GREEN
+    overlay: PROGRESS
+
+  # List of tasks to complete collectively
+  tasks:
+    break_stones:
+      type: BLOCK_BREAK
+      display-name: "<gray><bold>Break Stones</bold></gray>"
+      icon: STONE
+      target: 500000
+      blocks:
+        - STONE
+        - COBBLESTONE
+        - DEEPSLATE
+        - COBBLED_DEEPSLATE
+    trade_villagers:
+      type: VILLAGER_TRADE
+      display-name: "<gold><bold>Villager Trades</bold></gold>"
+      icon: VILLAGER_SPAWN_EGG
+      target: 100000
+    trade_emeralds:
+      type: VILLAGER_TRADE_ITEM
+      display-name: "<green><bold>Trade Emeralds</bold></green>"
+      icon: EMERALD
+      target: 50000
+      item: EMERALD
+      mode: ANY # GIVEN, RECEIVED, or ANY
+    kill_zombies:
+      type: KILL_ENTITY
+      display-name: "<red><bold>Slay Zombies</bold></red>"
+      icon: ZOMBIE_HEAD
+      target: 10000
+      entities:
+        - ZOMBIE
+        - ZOMBIE_VILLAGER
+        - HUSK
+        - DROWNED
+    craft_pistons:
+      type: CRAFT_ITEM
+      display-name: "<yellow><bold>Craft Pistons</bold></yellow>"
+      icon: PISTON
+      target: 5000
+      items:
+        - PISTON
+        - STICKY_PISTON
+    upgrade_claims:
+      type: CUSTOM
+      display-name: "<aqua><bold>Upgrade Claims</bold></aqua>"
+      icon: BEACON
+      target: 5
+      custom_id: upgrade_claim
+
 # ── Badges (MiniMessage display text, symbol & custom icon) ───────
 # grantable: true = grant-only via /guildadmin badge grant (cannot be bought)
 # grantable: false = buyable with economy funds if cost > 0
@@ -179,6 +283,9 @@ commands:
           withdraw:
             name: withdraw
             aliases: [with]
+      mission:
+        name: mission
+        aliases: [missions, quest, quests, m]
       help:
         name: help
         aliases: [?]
@@ -198,6 +305,15 @@ commands:
         children:
           grant: grant
           revoke: revoke
+      mission:
+        name: mission
+        children:
+          start: start
+          stop: stop
+          complete: complete
+          addprogress: addprogress
+          removeprogress: removeprogress
+          resetcooldown: resetcooldown
 
 # ── Default roles ────────────────────────────────────────────────
 # Configure default role names, indexes, and colors for newly created guilds
@@ -269,6 +385,10 @@ permissions:
   bank_withdraw:
     name: "Bank Withdraw"
     icon: GOLD_INGOT
+    index: 1
+  mission_start:
+    name: "Mission Start"
+    icon: TARGET
     index: 1
 
 # ── Role Colors (customizable display names) ────────────────────

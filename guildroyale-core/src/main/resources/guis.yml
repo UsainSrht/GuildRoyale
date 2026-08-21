@@ -63,11 +63,35 @@ main:
     storage: 31
     bank: 33
     badges: 35
+    missions: 28
     permissions: 38
     settings: 42
   badge-line: " <gray>Badge: <badge> "
   next-perks-header: " <yellow><bold>Next Level Perks (Lv.<next_level>):</bold></yellow> "
   max-level-reached: " <green>Maximum level reached! "
+
+missions:
+  size: 54
+  title: "<shadow:#000000FF><gradient:#f0c14b:#ffe08a><bold>Guild Missions</bold></gradient></shadow>"
+  slots:
+    info: 20
+    start: 24
+    overview: 4
+    cancel: 47
+    back: 49
+  requirements:
+    separator: " <dark_gray>───────────────── "
+    header: " <yellow>Requirements: "
+    role-ok: " <green>✔ <gray>Guild Role Permission "
+    role-fail: " <red>✘ <gray>Guild Role Permission "
+    permission-ok: " <green>✔ <gray>Permission "
+    permission-fail: " <red>✘ <gray>Permission <dark_gray>(<node>) "
+    cooldown-ok: " <green>✔ <gray>Cooldown: <white>Ready "
+    cooldown-fail: " <red>✘ <gray>Cooldown: <yellow><cooldown> remaining "
+    cost-ok: " <green>✔ <gray>Cost: <white><cost><source> "
+    cost-fail: " <red>✘ <gray>Cost: <white><cost><source> "
+    item-ok-prefix: " <green>✔ "
+    item-fail-prefix: " <red>✘ "
 
 members:
   size: 54
@@ -733,4 +757,110 @@ items:
       - " <gray>Total Contributors: <gold><contributors></gold> "
       - ""
       - " <green>Maximum level reached! "
+      - ""
+
+  # ── Missions ───────────────────────────────────────────────────
+  main-missions:
+    material: target
+    name: "<gradient:#55c57a:#a8e6c1><bold>Guild Missions</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Work with your guild to complete "
+      - " <gray>collective missions and earn "
+      - " <gray>guild XP & bank money. "
+      - ""
+      - " <yellow>Click to view & start missions "
+      - ""
+
+  main-missions-active:
+    material: target
+    name: "<gradient:#f4d03f:#f9e79f><bold>Guild Mission in Progress</bold></gradient>"
+    lore:
+      - ""
+      - " <green><bold>ACTIVE MISSION</bold></green> "
+      - " <gray>Your guild currently has an ongoing "
+      - " <gray>mission. Contribute now! "
+      - ""
+      - " <yellow>Click to view active mission "
+      - ""
+
+  missions-info:
+    material: book
+    name: "<gradient:#f0c14b:#ffe08a><bold>Mission Information</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Duration: <yellow><duration></yellow> "
+      - " <gray>Completion Reward: <green>+<reward_xp> XP<gray>, <gold>+<reward_money></gold> "
+      - " <gray>Failure Penalty: <red>-<penalty_xp> XP<gray>, <red>-<penalty_money></red> "
+      - ""
+      - " <gray>All guild members contribute "
+      - " <gray>towards shared mission tasks! "
+      - ""
+
+  mission-start-ready:
+    material: emerald_block
+    name: "<gradient:#55c57a:#a8e6c1><bold>Start Guild Mission</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Click to initiate a new guild mission "
+      - " <gray>for all guild members. "
+
+  mission-start-cooldown:
+    material: clock
+    name: "<gradient:#f4d03f:#f9e79f><bold>Mission On Cooldown</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Guild missions can only be started "
+      - " <gray>once per cycle. "
+
+  mission-start-no-permission:
+    material: barrier
+    name: "<gradient:#e74c3c:#f1948a><bold>Cannot Start Mission</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>You do not have the required "
+      - " <gray>permissions to start a mission. "
+
+  mission-start-insufficient-funds:
+    material: gold_nugget
+    name: "<gradient:#e74c3c:#f1948a><bold>Insufficient Funds</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Not enough money to initiate "
+      - " <gray>the guild mission. "
+
+  mission-start-missing-items:
+    material: chest_minecart
+    name: "<gradient:#e74c3c:#f1948a><bold>Missing Required Items</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>You are missing required items "
+      - " <gray>to start the mission. "
+
+  mission-active-indicator:
+    material: target
+    name: "<gradient:#f4d03f:#f9e79f><bold>Mission in Progress</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>A guild mission is already active! "
+
+  mission-overview:
+    material: compass
+    name: "<gradient:#55c57a:#a8e6c1><bold>Mission Progress</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Time Remaining: <yellow><time_remaining></yellow> "
+      - " <gray>Tasks Completed: <green><completed_tasks></green><gray>/<white><total_tasks></white> "
+      - " <gray>Overall Progress: <progress_bar> <white>(<percent>%)</white> "
+      - ""
+
+  mission-cancel:
+    material: barrier
+    name: "<gradient:#e74c3c:#f1948a><bold>Cancel Mission</bold></gradient>"
+    lore:
+      - ""
+      - " <gray>Forfeit the current mission. "
+      - " <red>No rewards will be granted! "
+      - ""
+      - " <yellow>Click to cancel mission "
       - ""

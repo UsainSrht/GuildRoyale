@@ -60,7 +60,7 @@ public final class Guild {
             throw new IllegalArgumentException("Level must be at least " + GuildLevel.MIN_LEVEL);
         }
         this.level = level;
-        this.xp = Math.max(0, xp);
+        this.xp = xp;
         this.members = new ArrayList<>(Objects.requireNonNull(members, "members"));
         this.roles = new ArrayList<>(Objects.requireNonNull(roles, "roles"));
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt");
@@ -116,8 +116,8 @@ public final class Guild {
     }
 
     public long getXp() { return xp; }
-    public void setXp(long xp) { this.xp = Math.max(0, xp); }
-    public void addXp(long amount) { this.xp = Math.max(0, this.xp + amount); }
+    public void setXp(long xp) { this.xp = xp; }
+    public void addXp(long amount) { this.xp = this.xp + amount; }
 
     public Instant getCreatedAt() { return createdAt; }
 

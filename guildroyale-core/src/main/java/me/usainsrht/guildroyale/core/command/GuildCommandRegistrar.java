@@ -55,6 +55,7 @@ public final class GuildCommandRegistrar {
         CommandNodes.attach(root, BadgeSubcommand.node(cfg.guildSubSpec("badge")), cfg.guildSubAliases("badge"));
         CommandNodes.attach(root, StorageSubcommand.node(cfg.guildSub("storage")), cfg.guildSubAliases("storage"));
         CommandNodes.attach(root, BankSubcommand.node(cfg.guildSubSpec("bank")), cfg.guildSubAliases("bank"));
+        CommandNodes.attach(root, MissionSubcommand.node(cfg.guildSub("mission")), cfg.guildSubAliases("mission"));
 
         // help
         LiteralCommandNode<io.papermc.paper.command.brigadier.CommandSourceStack> helpNode =
@@ -119,6 +120,7 @@ public final class GuildCommandRegistrar {
         SUB_USAGE.put("badge", "<list|buy|equip>");
         SUB_USAGE.put("storage", "");
         SUB_USAGE.put("bank", "<balance|deposit|withdraw>");
+        SUB_USAGE.put("mission", "");
         SUB_USAGE.put("help", "");
     }
 
@@ -170,6 +172,7 @@ public final class GuildCommandRegistrar {
             case "badge" -> CommandConfig.PERM_BADGE;
             case "storage" -> CommandConfig.PERM_STORAGE;
             case "bank" -> CommandConfig.PERM_BANK;
+            case "mission" -> CommandConfig.PERM_MISSION;
             case "help" -> CommandConfig.PERM_HELP;
             default -> null;
         };

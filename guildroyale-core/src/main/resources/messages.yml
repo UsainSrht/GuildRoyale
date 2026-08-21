@@ -202,6 +202,44 @@ leaderboard-entry: "<gray>#<rank> <gold><guild></gold> — Lv.<gold><level></gol
 leaderboard-empty: "<yellow>No guilds found."
 leaderboard-invalid-page: "<red>Invalid page number."
 
+# ── Missions ──────────────────────────────────────────────────────
+mission-started:
+  chat: "<green><bold>GUILD MISSION STARTED!</bold></green> <gray>Work together to complete all collective tasks before time runs out!</gray>"
+  title:
+    title: "<gradient:#55c57a:#a8e6c1><bold>Guild Mission</bold></gradient>"
+    subtitle: "<yellow>New mission has started!</yellow>"
+    fade-in: 10
+    stay: 50
+    fade-out: 15
+  sound: ui.toast.challenge_complete
+
+mission-completed:
+  chat: "<green><bold>MISSION COMPLETED!</bold></green> <gray>All tasks were successfully completed! Earned <gold>+<reward_xp> XP</gold> and <gold>+<reward_money></gold> to bank!</gray>"
+  title:
+    title: "<gradient:#55c57a:#a8e6c1><bold>Mission Complete!</bold></gradient>"
+    subtitle: "<green>+<reward_xp> XP <dark_gray>•</dark_gray> +<reward_money></green>"
+    fade-in: 10
+    stay: 60
+    fade-out: 20
+  sound: ui.toast.challenge_complete
+
+mission-failed:
+  chat: "<red><bold>MISSION FAILED!</bold></red> <gray>Time expired before all tasks were completed! Deducted <red>-<penalty_xp> XP</red> and <red>-<penalty_money></red> from bank.</gray>"
+  title:
+    title: "<gradient:#e74c3c:#f1948a><bold>Mission Failed</bold></gradient>"
+    subtitle: "<red>-<penalty_xp> XP <dark_gray>•</dark_gray> -<penalty_money></red>"
+    fade-in: 10
+    stay: 60
+    fade-out: 20
+  sound: entity.villager.no
+
+mission-cancelled: "<yellow>Guild mission has been cancelled by an officer."
+mission-task-completed: "<green>✔ <gray>Guild task <white><task_name></white> has been completed!"
+mission-on-cooldown: "<red>Guild missions are currently on cooldown for your guild."
+mission-already-active: "<red>Your guild already has an active mission in progress!"
+mission-insufficient-funds: "<red>Not enough money to start a guild mission."
+mission-missing-items: "<red>You do not have all required items in your inventory to start a mission."
+
 # ── Admin ─────────────────────────────────────────────────────────
 admin-reload:
   chat: "<green>GuildRoyale configuration reloaded."
@@ -211,6 +249,12 @@ admin-setlevel: "<green>Set <gold><guild></gold>'s level to <gold><level></gold>
 admin-delete: "<green>Guild <gold><guild></gold> has been forcefully deleted."
 admin-badge-grant: "<green>Granted badge <gold><badge></gold> to <gold><guild></gold>."
 admin-badge-revoke: "<yellow>Revoked badge <gold><badge></gold> from <gold><guild></gold>."
+admin-mission-started: "<green>Force-started mission for guild <gold><guild></gold>."
+admin-mission-stopped: "<yellow>Stopped active mission for guild <gold><guild></gold>."
+admin-mission-completed: "<green>Force-completed mission with rewards for guild <gold><guild></gold>."
+admin-mission-progress-added: "<green>Added <gold><amount></gold> progress to task <gold><task></gold> for guild <gold><guild></gold>."
+admin-mission-progress-removed: "<yellow>Removed <gold><amount></gold> progress from task <gold><task></gold> for guild <gold><guild></gold>."
+admin-mission-cooldown-reset: "<green>Reset mission cooldown for guild <gold><guild></gold>."
 
 # ── Help ──────────────────────────────────────────────────────────
 guild-help-header: "<gold><bold>GuildRoyale</bold></gold> <dark_gray>—</dark_gray> <yellow>/<cmd> help</yellow>"

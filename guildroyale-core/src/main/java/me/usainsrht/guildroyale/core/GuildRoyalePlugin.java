@@ -40,6 +40,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
     private GuiConfig guiConfig;
     private FoliaScheduler scheduler;
     private GuildRepository repository;
+    private me.usainsrht.guildroyale.api.storage.MissionRepository missionRepository;
     private GuildLogWriter logWriter;
 
     private GuildServiceImpl guildService;
@@ -47,6 +48,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
     private RoleServiceImpl roleService;
     private LeaderboardServiceImpl leaderboardService;
     private TagServiceImpl tagService;
+    private MissionServiceImpl missionService;
 
     private GuiManager guiManager;
     private DialogManager dialogManager;
@@ -65,8 +67,10 @@ public final class GuildRoyalePlugin extends JavaPlugin {
         logWriter = new GuildLogWriter(this);
 
         repository = StorageFactory.create(this, configManager, scheduler);
+        missionRepository = StorageFactory.createMissionRepository(this, configManager, scheduler, repository);
         try {
             repository.init().join();
+            missionRepository.init().join();
             getSLF4JLogger().info("Storage backend initialised: {}", configManager.getStorageType());
         } catch (Exception ex) {
             getSLF4JLogger().error("Failed to initialise storage backend", ex);
@@ -91,6 +95,15 @@ public final class GuildRoyalePlugin extends JavaPlugin {
         leaderboardService = new LeaderboardServiceImpl(repository, configManager, scheduler);
         leaderboardService.startRefreshTask();
         tagService = new TagServiceImpl(messagesManager);
+        missionService = new MissionServiceImpl(this, repository, missionRepository, configManager, economy, scheduler, events);
+        missionService.init();
+
+        getServer().getServicesManager().register(
+                me.usainsrht.guildroyale.api.service.MissionService.class,
+                missionService,
+                this,
+                org.bukkit.plugin.ServicePriority.Normal
+        );
 
         guiManager = new GuiManager();
         dialogManager = new DialogManager();
@@ -101,6 +114,7 @@ public final class GuildRoyalePlugin extends JavaPlugin {
         pm.registerEvents(new GuildEventListener(logWriter), this);
         pm.registerEvents(new PlayerQuitListener(guiManager), this);
         pm.registerEvents(new me.usainsrht.guildroyale.core.listener.GuildDamageListener(guildService), this);
+        pm.registerEvents(new me.usainsrht.guildroyale.core.listener.MissionListener(this, missionService, guildService), this);
 
         if (pm.getPlugin("PlaceholderAPI") != null) {
             new GuildRoyalePlaceholderExpansion(this, guildService, leaderboardService).register();
@@ -114,6 +128,8 @@ public final class GuildRoyalePlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         MiniPlaceholdersHook.unregister();
+        if (missionService != null) missionService.shutdown();
+        if (missionRepository != null) missionRepository.shutdown();
         if (guildStorageManager != null) guildStorageManager.clear();
         if (guiManager != null) guiManager.clear();
         if (memberService != null) memberService.shutdown();
@@ -130,11 +146,13 @@ public final class GuildRoyalePlugin extends JavaPlugin {
     public GuiConfig getGuiConfig() { return guiConfig; }
     public FoliaScheduler getScheduler() { return scheduler; }
     public GuildRepository getRepository() { return repository; }
+    public me.usainsrht.guildroyale.api.storage.MissionRepository getMissionRepository() { return missionRepository; }
 
     public GuildService getGuildService() { return guildService; }
     public MemberService getMemberService() { return memberService; }
     public RoleService getRoleService() { return roleService; }
     public LeaderboardService getLeaderboardService() { return leaderboardService; }
+    public me.usainsrht.guildroyale.api.service.MissionService getMissionService() { return missionService; }
 
     public me.usainsrht.guildroyale.core.service.TagService getTagService() { return tagService; }
 
